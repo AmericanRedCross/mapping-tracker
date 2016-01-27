@@ -4,8 +4,9 @@ node_modules
 *.scssc
 config.js
 notes/*
-backups/*
-!backups/note.txt
+client/css/fonts/*
+ocha-style.css
+metisMenu.min.css
 
 # Compiled source #
 ###################

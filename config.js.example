@@ -4,8 +4,8 @@
 var settings = {}
 
 settings.page = {
-	siteName: "Site name",
-	description: "Use this site to do things.",
+	siteName: "Mapping tracker",
+	description: "Use this site to view things."
 }
 
 settings.application = {

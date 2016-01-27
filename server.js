@@ -258,75 +258,21 @@ app.get('/',function (req,res) {
 })
 
 
-// dashboard pages using a postgres connection
-var PostGresHelper = require("./routes/postGresHelper.js");
-var pghelper = new PostGresHelper();
+// # dashboard pages using a postgres connection
+// var PostGresHelper = require("./routes/postGresHelper.js");
+// var pghelper = new PostGresHelper();
+//
+// app.get('/query/:queryStr',function(req,res) {
+// 	if (req.user && req.params.queryStr) {
+// 		pghelper.query(req.params.queryStr, function(err, data){
+// 			res.send(data);
+// 		})
+// 	}
+// })
 
-app.get('/query/:queryStr',function(req,res) {
-	if (req.user && req.params.queryStr) {
-		pghelper.query(req.params.queryStr, function(err, data){
-			res.send(data);
-		})
-	}
-})
-
-app.get('/households',function(req,res) {
+app.get('/page',function(req,res) {
 	if (req.user) {
-		pghelper.query('SELECT * FROM "HOUSEHOLD";', function(err, data){
-	    res.render('household', {
-				user:req.user,
-	      opts:localConfig.page,
-	      pgdata:data,
-				error:req.flash("loginMessage")
-	    });
-	  });
-	} else {
-		res.redirect("/");
-	}
-})
-
-app.get('/households-map',function(req,res) {
-	if (req.user) {
-		pghelper.query('SELECT * FROM "HOUSEHOLD";', function(err, data){
-	    res.render('households-map', {
-				user:req.user,
-	      opts:localConfig.page,
-	      pgdata:data,
-				error:req.flash("loginMessage")
-	    });
-	  });
-	} else {
-		res.redirect("/");
-	}
-})
-
-app.get('/ccg',function(req,res) {
-	if (req.user) {
-    res.render('ccg', {
-			user:req.user,
-      opts:localConfig.page,
-			error:req.flash("loginMessage")
-    });
-	} else {
-		res.redirect("/");
-	}
-})
-
-app.get('/core-shelter',function(req,res) {
-	if (req.user) {
-    res.render('core-shelter', {
-			user:req.user,
-      opts:localConfig.page,
-			error:req.flash("loginMessage")
-    });
-	} else {
-		res.redirect("/");
-	}
-})
-
-app.get('/sted',function(req,res) {
-	if (req.user) {
-    res.render('sted', {
+    res.render('page', {
 			user:req.user,
       opts:localConfig.page,
 			error:req.flash("loginMessage")
