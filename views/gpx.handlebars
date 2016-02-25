@@ -1,0 +1,53 @@
+<header class="row header">
+	<div class="col-md-12">
+		<h1>GPX track manager</h1>
+	</div>
+</header>
+
+<!-- <div class="row">
+  <div class="col-md-12">
+    <label class="btn btn-dark" for="gpx-selector">
+        <input id="gpx-selector" type="file" style="display:none;">
+        Upload &nbsp;<i class="fa fa-plus"></i>
+    </label>
+  </div>
+</div> -->
+
+<div class="row">
+<div class="col-md-12">
+  <table>
+    <thead>
+      <tr>
+        <th>key</th>
+        <th>last modified</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{#each listgpx}}
+      <tr>
+        <td>{{Key}}</td>
+        <td>{{LastModified}}</td>
+      </tr>
+    {{/each}}
+    </tbody>
+  </table>
+</div>
+</div>
+
+<script>
+
+$(document).on('change', '#gpx-selector', function() {
+    var input = $(this),
+        numFiles = input.get(0).files ? input.get(0).files.length : 1,
+        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+    input.trigger('fileselect', [numFiles, label]);
+});
+
+$(document).ready( function() {
+    $('#gpx-selector').on('fileselect', function(event, numFiles, label) {
+        console.log(numFiles);
+        console.log(label);
+    });
+});
+
+</script>

@@ -10,13 +10,19 @@ settings.page = {
 
 settings.application = {
 	db: "users",
-	port: 8000
+	port: 3000
+}
+
+settings.s3 = {
+  bucket: '',
+	gpxFolder: "gpx/"
+  //Amazon S3 Credentials are stored in ~/.aws/credentials (see: http://aws.amazon.com/sdk-for-node-js/)
 }
 
 settings.pg = {
 	server: 'localhost',
 	port: '5432',
-	database: '',
+	database: 'mapping',
 	user: '',
 	password: ''
 }

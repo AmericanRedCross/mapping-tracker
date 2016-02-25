@@ -270,6 +270,24 @@ app.get('/',function (req,res) {
 // 	}
 // })
 
+var S3Helper = require("./routes/s3Helper.js");
+var s3helper = new S3Helper();
+
+app.get('/gpx',function(req,res) {
+	if (req.user) {
+		s3helper.listGpx(function(err, data){
+	    res.render('gpx', {
+				user:req.user,
+	      opts:localConfig.page,
+	      listgpx:data,
+				error:req.flash("loginMessage")
+	    });
+	  });
+	} else {
+		res.redirect("/");
+	}
+})
+
 app.get('/page',function(req,res) {
 	if (req.user) {
     res.render('page', {
