@@ -6,8 +6,8 @@ flow = require('flow');
 // var PostGresHelper = require("./PostGresHelper.js");
 // var pghelper = new PostGresHelper();
 
-// var S3Helper = require("./S3Helper.js");
-// var s3helper = new S3Helper();
+var S3Helper = require("./S3Helper.js");
+var s3helper = new S3Helper();
 
 var Gpx = require("../routes/Gpx.js");
 var gpx = new Gpx();
@@ -36,6 +36,12 @@ ETL.prototype.run = flow.define(
   function(){
     console.log('step 3')
     gpx.segmentTracks(this);
+  },
+  function(){
+    console.log('step 4')
+    for(var key in gpx.featureCollections){
+      s3helper.moveProcessedGpx(key, this.MULTI());
+    }
   },
   function(){
     console.log("Finished.");

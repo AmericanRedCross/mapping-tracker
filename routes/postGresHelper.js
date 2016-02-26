@@ -25,10 +25,13 @@ PostGresHelper.prototype.query = function(queryStr, cb) {
       done();
 
       if (queryerr) {
-        console.error('ERROR RUNNING QUERY:', queryStr, queryerr);
+        //console.error('ERROR RUNNING QUERY:', queryStr, queryerr);
+        console.error('ERROR RUNNING QUERY');
       }
 
-      console.log("Ran Query: " + queryStr);
+      // console.log("Ran Query: " + queryStr);
+      console.log("RAN QUERY" );
+
 
       cb((err || queryerr), (result && result.rows ? result.rows : result));
 

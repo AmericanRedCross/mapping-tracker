@@ -8,7 +8,7 @@ var localConfig = require('../config');
 var flow = require('flow');
 
 var AWS = require('aws-sdk');
-var aws = new AWS.S3();
+var s3 = new AWS.S3();
 
 var PostGresHelper = require("./PostGresHelper.js");
 var pghelper = new PostGresHelper();
@@ -27,7 +27,7 @@ Gpx.prototype.fetchFilelist = function(cb) {
 
   var self = this;
 
-  aws.listObjects(listParams, function(err, data) {
+  s3.listObjects(listParams, function(err, data) {
 
     if(err){
       cb(err, null)
@@ -81,7 +81,7 @@ Gpx.prototype.fetchConvertData = function(fileKey, cb) {
 
   console.log("fetchConvert: " + fileKey);
 
-  aws.getObject(getParams, function(err, data) {
+  s3.getObject(getParams, function(err, data) {
     var gpx = jsdom(data.Body);
     var converted = tj.gpx(gpx);
 
