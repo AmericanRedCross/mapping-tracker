@@ -32,7 +32,7 @@ S3Helper.prototype.moveProcessedGpx = function(fileKey, cb) {
   var copyParams = {
     Bucket: localConfig.s3.bucket,
     CopySource:  localConfig.s3.bucket + '/' + fileKey,
-    Key: localConfig.s3.gpxFolder + 'processed/' + path.basename(fileKey)
+    Key: 'gpx-processed/' + path.basename(fileKey)
   };
   var deleteParams = {  Bucket: localConfig.s3.bucket, Key: fileKey };
 
