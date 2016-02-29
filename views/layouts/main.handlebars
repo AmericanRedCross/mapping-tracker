@@ -11,6 +11,7 @@
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 		<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 		<script src="js/metisMenu.min.js"></script>
+		<script src="js/d3.min.js" ></script>
 		<!-- <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script> -->
 		<!-- <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" /> -->
 
@@ -32,11 +33,13 @@
             <li class="sidebar-brand">
                 <a href="/"  onclick = $("#menu-close").click(); >Home</a>
             </li>
-
-            <li>
-                <a href="/page" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-area-chart"></i> &nbsp; This a page</a>
-            </li>
 						<li>
+                <a href="/mapping" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-search"></i> &nbsp; Mapping tracker</a>
+            </li>
+            <li>
+                <a href="/gpx" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-location-arrow"></i> &nbsp; GPX manager</a>
+            </li>
+						<!-- <li>
                 <a href="#">Dropdown nav menu <i class="fa nav-arrow nav-float-right"></i></a>
                 <ul class="second-level">
                     <li>
@@ -57,9 +60,9 @@
                         <a href="#">Four</a>
                     </li>
                 </ul>
-            </li>
+            </li> -->
 
-            <li>
+            <!-- <li>
                 <a href="#about" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-briefcase"></i> &nbsp; Another page</a>
             </li>
             <li>
@@ -76,7 +79,7 @@
 							<a href="#top"  onclick = document.getElementById('form-logout').submit(); >{{user.username}}
 								<span class="logout nav-float-right">Logout &nbsp;<i class="fa fa-sign-out"></i></span>
 							</a>
-						</li>
+						</li> -->
 						{{#eq user.permissions "super"}}
 							<li>
 								<a href="/users"><i class="fa fa-user"></i> &nbsp; Manage users</a>

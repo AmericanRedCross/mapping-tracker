@@ -5,6 +5,7 @@ var AppCtrl = require('./routes/app').Ctrl;
 var Asset = require('./routes/app').Asset;
 var moment = require('moment');
 var fs = require('fs');
+var path = require('path');
 
 
 var ctrl = new AppCtrl('localhost', 27017);
@@ -60,7 +61,7 @@ app.use(morgan('dev'));     /* 'default', 'short', 'tiny', 'dev' */
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-app.use(multer());
+// app.use(multer());
 app.use(cookieParser());
 app.use(session({
   secret: 'thisissecret',
@@ -249,6 +250,76 @@ app.get('/api/user/:email',[jwtauth.auth],function(req,res) {
 	}
 })
 
+
+var PostGresHelper = require("./routes/postGresHelper.js");
+var pghelper = new PostGresHelper();
+
+var Gpx = require("./routes/Gpx.js");
+var gpx = new Gpx();
+
+var ETL = require("./routes/ETL.js");
+var etl = new ETL();
+
+var storage =   multer.diskStorage({
+  destination: function (req, file, callback) {
+    callback(null, './tmp');
+  },
+  filename: function (req, file, callback) {
+    callback(null, file.originalname.substr(0, file.originalname.lastIndexOf('.')) + '_' + Date.now() + path.extname(file.originalname));
+  }
+});
+var upload = multer({ storage : storage }).array('gpxFiles');
+
+app.post('/uploadgpx',function(req,res){
+    upload(req,res,function(err) {
+        if(err) {
+            return res.end("Error uploading file.");
+        }
+				// console.log(req.body);
+				// console.log(req.files);
+				etl.run(req.files, function(err,data){
+					res.end('Ran ETL.');
+				});
+    });
+});
+
+app.get('/query/distinct-file',function(req,res) {
+	if (req.user) {
+		var queryStr = "SELECT DISTINCT file FROM data.gpx;";
+		console.log(queryStr)
+		pghelper.query(queryStr, function(err, data){
+			console.log('returned data: ' + data)
+			res.send(data);
+		})
+	}
+})
+
+app.post('/query/gpx-single', function (req,res){
+	if (req.user){
+	var queryStr = "SELECT row_to_json(fc) "+
+   "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+   "FROM (SELECT 'Feature' As type "+
+      ", ST_AsGeoJSON(lg.geom)::json As geometry"+
+      ", row_to_json((SELECT l FROM (SELECT speed) As l"+
+        ")) As properties "+
+     "FROM data.gpx As lg WHERE file='" + req.body.file + "'  ) As f )  As fc;";
+
+		pghelper.query(queryStr, function(err, data){
+ 			res.send(data[0]["row_to_json"]);
+ 		})
+	}
+})
+
+app.post('/query/remove-file', function (req,res){
+	if (req.user){
+		gpx.removeFile(req.body.file, function(err, data){
+			res.end();
+		})
+	}
+})
+
+
+
 app.get('/',function (req,res) {
 	res.render('home',{
 		user:req.user,
@@ -256,19 +327,6 @@ app.get('/',function (req,res) {
 		error:req.flash("loginMessage")
 	});
 })
-
-
-// # dashboard pages using a postgres connection
-// var PostGresHelper = require("./routes/postGresHelper.js");
-// var pghelper = new PostGresHelper();
-//
-// app.get('/query/:queryStr',function(req,res) {
-// 	if (req.user && req.params.queryStr) {
-// 		pghelper.query(req.params.queryStr, function(err, data){
-// 			res.send(data);
-// 		})
-// 	}
-// })
 
 var S3Helper = require("./routes/s3Helper.js");
 var s3helper = new S3Helper();
@@ -288,9 +346,21 @@ app.get('/gpx',function(req,res) {
 	}
 })
 
-app.get('/page',function(req,res) {
+app.get('/mapping',function(req,res) {
 	if (req.user) {
-    res.render('page', {
+    res.render('mapping', {
+			user:req.user,
+      opts:localConfig.page,
+			error:req.flash("loginMessage")
+    });
+	} else {
+		res.redirect("/");
+	}
+})
+
+app.get('/map',function(req,res) {
+	if (req.user) {
+    res.render('map', {
 			user:req.user,
       opts:localConfig.page,
 			error:req.flash("loginMessage")

@@ -29,7 +29,7 @@ PostGresHelper.prototype.query = function(queryStr, cb) {
         console.error('ERROR RUNNING QUERY');
       }
 
-      // console.log("Ran Query: " + queryStr);
+      console.log("Ran Query: " + queryStr);
       console.log("RAN QUERY" );
 
 

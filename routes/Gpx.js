@@ -17,75 +17,43 @@ var Gpx = function() {
   this.featureCollections = {};
 }
 
-Gpx.prototype.fetchFilelist = function(cb) {
-
-  console.log('fetchFileList')
-  var listParams = {
-    Bucket: localConfig.s3.bucket,
-    Prefix: localConfig.s3.gpxFolder
-  };
+Gpx.prototype.removeFile = function(fileName, cb) {
 
   var self = this;
 
-  s3.listObjects(listParams, function(err, data) {
-
-    if(err){
-      cb(err, null)
-      return;
-    }
-
-    for(var i=0; i < data.Contents.length; i++){
-      var fileKey = data.Contents[i].Key
-      if(path.extname(fileKey) === '.gpx'){ self.featureCollections[fileKey] = ""; }
-      if(i+1 === data.Contents.length){
-        console.log("yep")
-        cb(null, self.featureCollections);
-
-      }
-    }
-
-  });
-
-}
-
-Gpx.prototype.fetchAllData = function(cb) {
-  console.log('fetch all Data')
-
-  var self = this;
-
-  var getData = flow.define(
+  var removal = flow.define(
     function(){
-        for(var key in self.featureCollections) {
-          self.fetchConvertData(key, this.MULTI());
-        }
+
+      this.cb = cb;
+
+      var queryStr = "DELETE FROM data.gpx WHERE file='" + fileName + "';"
+			pghelper.query(queryStr, this);
+
     },
     function(){
-      console.log('done fetchConvertData')
-      //When all are complete, fire callback
-      cb();
-    }
-  )
-  //Trigger the flow
-  getData();
 
+      var deleteParams = {  Bucket: localConfig.s3.bucket, Key: localConfig.s3.gpxFolder + fileName };
+      s3.deleteObject(deleteParams, this);
+
+    },
+    function(){
+      this.cb();
+    }
+  );
+  removal();
 }
 
-Gpx.prototype.fetchConvertData = function(fileKey, cb) {
+
+Gpx.prototype.convertFile = function(fileObject, cb) {
 
   var self = this;
 
-  var getParams = {
-    Bucket: localConfig.s3.bucket,
-    Key: fileKey
-  };
+  fs.readFile(fileObject.path, function(err,data){
+    if (err) { console.log(err) }
 
-  console.log("fetchConvert: " + fileKey);
-
-  s3.getObject(getParams, function(err, data) {
-    var gpx = jsdom(data.Body);
+    var gpx = jsdom(data);
     var converted = tj.gpx(gpx);
-
-    self.featureCollections[fileKey] = converted;
+    self.featureCollections[fileObject.filename] = converted;
     cb();
   });
 

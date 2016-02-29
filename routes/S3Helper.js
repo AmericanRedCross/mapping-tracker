@@ -3,6 +3,7 @@
 var pg = require('pg'),
 localConfig = require('../config');
 var path = require('path');
+var fs = require('fs');
 
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
@@ -10,6 +11,22 @@ var s3 = new AWS.S3();
 var S3Helper = function() {
 
 };
+
+S3Helper.prototype.backupGpx = function(filePath, cb) {
+
+  var body = fs.createReadStream(filePath);
+  var key = localConfig.s3.gpxFolder + path.basename(filePath);
+
+  s3.upload({Body: body, Bucket: localConfig.s3.bucket, Key: key}).
+    on('httpUploadProgress', function(evt) {
+      console.log(evt);
+    }).
+    send(function(err, data) {
+      fs.unlinkSync(filePath);
+      cb(err, data)
+    });
+
+}
 
 S3Helper.prototype.listGpx = function(cb) {
 
@@ -27,27 +44,6 @@ S3Helper.prototype.listGpx = function(cb) {
   });
 }
 
-S3Helper.prototype.moveProcessedGpx = function(fileKey, cb) {
-
-  var copyParams = {
-    Bucket: localConfig.s3.bucket,
-    CopySource:  localConfig.s3.bucket + '/' + fileKey,
-    Key: 'gpx-processed/' + path.basename(fileKey)
-  };
-  var deleteParams = {  Bucket: localConfig.s3.bucket, Key: fileKey };
-
-  s3.copyObject(copyParams, function(err, data){
-    if (err) console.log(err, err.stack);
-    else {
-      s3.deleteObject(deleteParams, function(err, data) {
-        if (err) console.log(err, err.stack);  // error
-        cb(err, data);
-      });
-
-    }
-  });
-
-}
 
 
 
