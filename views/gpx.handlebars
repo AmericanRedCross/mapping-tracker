@@ -27,7 +27,56 @@
   color: #6d6e70 !important;
   cursor: pointer;
 }
+
+.clickable-icon{
+  cursor: pointer;
+}
+/*.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: rgba(255,255,255,0.65);
+}*/
+
+.leaflet-control-zoom-extent:focus span {
+  color: black;
+}
+.leaflet-control-attribution {
+  font-size: x-small;
+  color: #78787d;
+}
+.leaflet-control-attribution a {
+  text-decoration: none;
+  cursor: pointer;
+  color: #6d6e70;
+}
 </style>
+
+
+
+<div id="update-mapper-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Dale_2016-02-28_12-22_Sun.gpx</h4>
+      </div>
+      <form action="/query/update-mapper" method="POST" id="update-mapper">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="mapper">Mapper ID</label>
+            <input type="text" class="form-control" name="mapper" id="mapper" value="Dale" required>
+            <input type="hidden" name="file" id="file" value="Dale_2016-02-28_12-22_Sun.gpx" required>
+          </div>
+        <!-- </div> -->
+        <div style="text-align:right;">
+          <div class="btn-group">
+            <button class="btn btn-success sharp">Update</button>
+            <button type="button" class="btn btn-dark sharp" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 
 
 <header class="row header">
@@ -42,16 +91,11 @@
           <span id="uploadBtn" class="btn btn-dark btn-file">
               Upload &nbsp;<i class="fa fa-plus"></i> <input type="file" name="gpxFiles" accept=".gpx" multiple />
 					</span>
-					<!-- <span class="btn btn-dark btn-file disabled">
-							Upload &nbsp;<i class="fa fa-spinner fa-pulse"></i> <input type="file" name="userPhoto" multiple />
-          </span> -->
       </span>
   </div>
 	<span class="help-block">
-		Files must be .gpx files. File should be name with the following convention: buifbguisb
+		Files must be .gpx files. Filename should begin with the mapper name/ID followed by an '_'.
 	</span>
-<!-- <input type="submit" value="Upload Image" name="submit"> -->
-<!-- <input type='text' id='random' name='random'><br> -->
   <span id = "status"></span>
 </form>
 
@@ -60,7 +104,9 @@
 
 <div class="row">
 <div class="col-md-6">
+<div id="mappedFile" style="text-align:right;"><i>Select a file to view.</i></div>
 <div id="map"></div>
+<hr>
 </div>
 <div class="col-md-6">
   <div id="files-table">
@@ -73,13 +119,12 @@
 <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.form/3.51/jquery.form.min.js"></script>
 <script src="//cdn.datatables.net/1.10.10/js/jquery.dataTables.js"></script>
 
-  <script>
+<script>
   $(document).ready(function() {
-    $('#uploadForm').submit(function() {
 
+    $('#uploadForm').submit(function() {
       d3.select("#uploadBtn").classed("disabled", true);
       d3.select("#uploadBtn i").classed({'fa-plus':false, 'fa-spinner':true, 'fa-pulse':true});
-
       $(this).ajaxSubmit({
         error: function(xhr) {
           status('Error: ' + xhr.status);
@@ -95,28 +140,43 @@
       return false;
     });
 
-    $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-        // console.log(numFiles);
-        // console.log(label);
+    $('#update-mapper').submit(function() {
+      $(this).ajaxSubmit({
+        error: function(xhr) {
+          status('Error: ' + xhr.status);
+        },
+        success: function(response) {
+          console.log(response)
+          //$("#status").empty().text(response);
+          $('#update-mapper-modal').modal('hide');
+          getDbFiles();
+        }
+      });
+      return false;
     });
 
 });
 
 $(document).on('change', '.btn-file :file', function() {
-    var input = $(this),
-        numFiles = input.get(0).files ? input.get(0).files.length : 1,
-        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-    input.trigger('fileselect', [numFiles, label]);
     $('#uploadForm').submit();
 });
 
+function updateMapper(currentMapper, fileName){
+  $('#update-mapper-modal').find('.modal-title').text(fileName);
+  $('#mapper').val(currentMapper);
+  $('#file').val(fileName);
+  $('#update-mapper-modal').modal();
+}
 
 
 var map = L.map('map').setView([0, 0], 2);
 var mapFeatures = L.layerGroup().addTo(map);
+var lineLayer = L.geoJson();
+var mapBounds;
+
 
 L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors | ' + '<a class="dislaimer" onclick="$(' + "'#info-modal'" + ').modal();"><span class="glyphicon glyphicon-info-sign"></span> disclaimer</a>'
+  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 
@@ -139,18 +199,22 @@ function getDbFiles(){
 function populateTable(rows){
 
   $("#files-table").empty();
-  $("#files-table").html('<table id="dataTable"><thead><tr><th>file name</th><th>view</th><th>delete</th></tr></thead><tbody></tbody></table>');
+  $("#files-table").html('<table id="dataTable"><thead><tr><th>mapper</th><th>file name</th><th>view</th></tr></thead><tbody></tbody></table>');
   $.each(rows, function(i,d){
-    var rowHtml = "<tr><td>" + d.file + "</td>" +
-    '<td><i class="fa fa-globe" onclick="getGpxGeoJson(' + "'" + d.file + "'" + ')"></i></td>' +
-    '<td><i class="fa fa-trash" onclick="removeFromDb(' + "'" + d.file + "'" + ')"></i></td></tr>';
+    var rowHtml = "<tr>"+ "<td>" + d.mapper + ' &nbsp;<i class="fa fa-pencil-square-o clickable-icon" onclick="updateMapper(' + "'" + d.mapper + "','" + d.file + "'" + ')"></i></td>' +
+    "<td>" + d.file + ' &nbsp;<i class="fa fa-trash remove-icon" onclick="removeFromDb(' + "'" + d.file + "'" + ')"></i></td>' +
+    '<td style="text-align:center;"><i class="fa fa-globe" onclick="getGpxGeoJson(' + "'" + d.file + "'" + ')"></i></td>' +
+    '</tr>';
     $('#dataTable tbody').append(rowHtml);
   })
   $('#dataTable').DataTable();
 
 }
 
-getDbFiles();
+function clearMap(){
+  $("#mappedFile").html('<i>Select a file to view.</i>')
+  mapFeatures.clearLayers();
+}
 
 function removeFromDb(filename){
 
@@ -161,7 +225,7 @@ function removeFromDb(filename){
       data: {'file': filename},
       url: '/query/remove-file'
     }).done(function(){
-      mapFeatures.clearLayers();
+      clearMap();
       getDbFiles();
     });
   } else {
@@ -178,24 +242,102 @@ function getGpxGeoJson(filename){
     url: '/query/gpx-single',
     dataType: 'JSON'
   }).done(function(response){
-    mapData(response);
+    mapData(filename, response);
   });
 }
 
-function mapData(data){
-  mapFeatures.clearLayers();
-  var lineLayer = L.geoJson(data, {
+function highlightFeature(e) {
+    var layer = e.target;
+    layer.setStyle({
+        weight: 5,
+        color: '#ECB731',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+    if (!L.Browser.ie && !L.Browser.opera) {
+        layer.bringToFront();
+    }
+    //info.update(layer.feature.properties);
+}
+
+function resetHighlight(e) {
+    lineLayer.resetStyle(e.target);
+    //info.update();
+}
+
+function onEachFeature(feature, layer){
+  var popupContent = 'speed: ' + (feature.properties.km / feature.properties.hours) + '<br>';
+  $.each(feature.properties, function(i,d){
+    if(i === 'hours'){
+      popupContent += '<b>minutes: </b>' + (d * 60).toFixed(1) + '<br>';
+    } else if(i === 'km'){
+      popupContent += '<b>' + i + ':</b> ' + d.toFixed(2) + '<br>';
+    }
+    else if(i !== 'file'){
+      popupContent += '<b>' + i + ':</b> ' + d + '<br>';
+    }
+  })
+  layer.bindPopup(popupContent);
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight
+  })
+}
+
+function mapData(filename, data){
+  clearMap();
+  $("#mappedFile").html('<b>' + filename + '</b>');
+  lineLayer = L.geoJson(data, {
     style: function(feature){
 			return {
-	        "weight": 5,
+	        "weight": 6,
 					"color": (feature.properties.speed === 'walk') ? "#0047d3" : "#ed1b2e",
 					"stroke": (feature.properties.speed === 'walk') ? "#0047d3" : "#ed1b2e",
-	        "opacity": 0.65,
-	        "clickable": false
+	        "opacity": 0.65
 	    }
-		}
+		},
+    onEachFeature: onEachFeature
   }).addTo(mapFeatures)
-  map.fitBounds(lineLayer.getBounds());
+  mapBounds = lineLayer.getBounds()
+  map.fitBounds(mapBounds);
 }
+
+// ADD CONTROL FOR ZOOM TO EXTENT
+var extentControl = L.Control.extend({
+  options: {
+    position: 'topleft',
+		title: 'Full extent',
+    content: '<i class="fa fa-expand"></i>'
+  },
+  onAdd: function (map) {
+    var className = 'leaflet-control-zoom-extent', content, container;
+    container = map.zoomControl._container;
+    content = this.options.content;
+    this._createButton(this.options.title, className, content, container, this);
+    return container;
+  },
+  _createButton: function (title, className, content, container, context) {
+    this.link = L.DomUtil.create('a', className, container);
+    this.link.href = '#';
+    this.link.title = title;
+    this.link.innerHTML = content;
+    return this.link;
+  }
+});
+map.addControl(new extentControl());
+
+function zoomOut() {
+    map.fitBounds(mapBounds);
+}
+
+$('.leaflet-control-zoom-extent').click(function(){
+  if(mapBounds){
+    zoomOut();
+  }
+})
+
+
+
+getDbFiles();
 
 </script>

@@ -22,11 +22,15 @@
     "mongoose": "^4.0.6",
     "morgan": "^1.6.0",
     "multer": "^1.1.0",
+    "osmtogeojson": "^2.2.11",
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",
     "pg": "^4.4.3",
+    "request": "^2.69.0",
     "togeojson": "^0.13.0",
-    "turf": "^2.0.2"
+    "turf": "^2.0.2",
+    "xmldom": "^0.1.22",
+    "xpath": "0.0.22"
   },
   "devDependencies": {},
   "scripts": {

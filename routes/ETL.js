@@ -4,21 +4,20 @@ localConfig = require('../config'),
 flow = require('flow'),
 multer  = require('multer');
 
-// var PostGresHelper = require("./PostGresHelper.js");
-// var pghelper = new PostGresHelper();
-
 var S3Helper = require("./S3Helper.js");
 var s3helper = new S3Helper();
 
 var Gpx = require("../routes/Gpx.js");
 var gpx = new Gpx();
 
+var Surveys = require("../routes/Surveys.js");
+var surveys = new Surveys();
 
 var ETL = function() {
 
 }
 
-ETL.prototype.run = function(uploads, cb){
+ETL.prototype.runGpx = function(uploads, cb){
 
   var self = this;
 
@@ -37,10 +36,6 @@ ETL.prototype.run = function(uploads, cb){
     },
     function(){
       console.log('step 2')
-      gpx.segmentTracks(this);
-    },
-    function(){
-      console.log('step 3')
       for(var item in uploads){
         s3helper.backupGpx(uploads[item].path, this.MULTI());
       }
@@ -55,5 +50,28 @@ ETL.prototype.run = function(uploads, cb){
   processUploads();
 
 }
+
+
+ETL.prototype.runSurvey = flow.define(
+
+    function(cb) {
+
+      this.cb = cb;
+
+      surveys.downloadAllData(this);
+
+    },
+    function(){
+
+      surveys.processSurveys(this);
+
+    },
+    function(){
+
+      console.log('done the runSurvey bit');
+      this.cb();
+    }
+
+);
 
 module.exports = ETL;

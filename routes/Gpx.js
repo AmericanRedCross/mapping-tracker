@@ -53,13 +53,15 @@ Gpx.prototype.convertFile = function(fileObject, cb) {
 
     var gpx = jsdom(data);
     var converted = tj.gpx(gpx);
-    self.featureCollections[fileObject.filename] = converted;
-    cb();
+    // self.featureCollections[fileObject.filename] = converted;
+    // cb();
+    self.segmentTracks(fileObject.filename, converted, cb);
+
   });
 
 }
 
-Gpx.prototype.segmentTracks = function(cb) {
+Gpx.prototype.segmentTracks = function(key, fc, cb) {
 
   var self = this;
 
@@ -82,11 +84,11 @@ Gpx.prototype.segmentTracks = function(cb) {
   var insertRows = flow.define(
     function () {
 
-      for(var key in self.featureCollections) {
+            var mapper = key.slice(0,key.indexOf("_"));
 
             var sql = "";
 
-            var data = self.featureCollections[key];
+            var data = fc;
 
             if(data.features){
               var analyzeLine = function(times, coords){
@@ -172,8 +174,9 @@ Gpx.prototype.segmentTracks = function(cb) {
                         if (holdingArray[0].properties.hours > 0 ) {
 
                           // // testOutput.features.push(holdingArray[0]);
-                          sql += "INSERT INTO data.gpx (file,first,last,km,hours,speed,geom) VALUES (" +
+                          sql += "INSERT INTO data.gpx (file,mapper,first,last,km,hours,speed,geom) VALUES (" +
                             "'" + key + "'," +
+                            "'" + mapper + "'," +
                             "'" + JSON.stringify(holdingArray[0].properties.first) + "'," +
                             "'" + JSON.stringify(holdingArray[0].properties.last) + "'," +
                             holdingArray[0].properties.km + "," +
@@ -204,8 +207,9 @@ Gpx.prototype.segmentTracks = function(cb) {
                 // // holdingArray[0].properties.stroke = (holdingArray[0].properties.speed === 'walk') ? "#0047d3" : "#ed1b2e";
                 // // holdingArray[0].properties.minutes = holdingArray[0].properties.hours * 60;
                 // // testOutput.features.push(holdingArray[0]);
-                sql += "INSERT INTO data.gpx (file,first,last,km,hours,speed,geom) VALUES (" +
+                sql += "INSERT INTO data.gpx (file,mapper,first,last,km,hours,speed,geom) VALUES (" +
                   "'" + key + "'," +
+                  "'" + mapper + "'," +
                   "'" + JSON.stringify(holdingArray[0].properties.first) + "'," +
                   "'" + JSON.stringify(holdingArray[0].properties.last) + "'," +
                   holdingArray[0].properties.km + "," +
@@ -240,7 +244,7 @@ Gpx.prototype.segmentTracks = function(cb) {
               pghelper.query(sql, this.MULTI());
             }
 
-      }
+
 
     }, function () {
       console.log('done insert rows');

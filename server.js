@@ -277,7 +277,7 @@ app.post('/uploadgpx',function(req,res){
         }
 				// console.log(req.body);
 				// console.log(req.files);
-				etl.run(req.files, function(err,data){
+				etl.runGpx(req.files, function(err,data){
 					res.end('Ran ETL.');
 				});
     });
@@ -285,7 +285,7 @@ app.post('/uploadgpx',function(req,res){
 
 app.get('/query/distinct-file',function(req,res) {
 	if (req.user) {
-		var queryStr = "SELECT DISTINCT file FROM data.gpx;";
+		var queryStr = "SELECT DISTINCT file,mapper FROM data.gpx;";
 		console.log(queryStr)
 		pghelper.query(queryStr, function(err, data){
 			console.log('returned data: ' + data)
@@ -294,19 +294,59 @@ app.get('/query/distinct-file',function(req,res) {
 	}
 })
 
+// SELECT min(first) AS dmin, max(last) AS dmax FROM data.gpx;
+// SELECT DISTINCT mapper FROM data.gpx;
+
+// SELECT * FROM data.gpx WHERE data.gpx.geom &&
+// 	ST_MakeEnvelope(minLon, minLat, maxLon, maxLat, 4326);
+
+// SELECT * FROM data.gpx WHERE first > DATE('2016-01-10');
+
+// SELECT * FROM data.gpx WHERE first > DATE('2016-02-28') AND first < DATE('2016-03-01');
+
+
 app.post('/query/gpx-single', function (req,res){
 	if (req.user){
 	var queryStr = "SELECT row_to_json(fc) "+
    "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
    "FROM (SELECT 'Feature' As type "+
       ", ST_AsGeoJSON(lg.geom)::json As geometry"+
-      ", row_to_json((SELECT l FROM (SELECT speed) As l"+
+      ", row_to_json((SELECT l FROM (SELECT file,mapper,first,last,km,hours,speed) As l"+
         ")) As properties "+
      "FROM data.gpx As lg WHERE file='" + req.body.file + "'  ) As f )  As fc;";
 
 		pghelper.query(queryStr, function(err, data){
  			res.send(data[0]["row_to_json"]);
  		})
+	}
+})
+
+app.get('/query/submissions-all', function(req,res) {
+	if (req.user) {
+		var queryStr = "SELECT row_to_json(fc) "+
+		 "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+		 "FROM (SELECT 'Feature' As type "+
+				", ST_AsGeoJSON(lg.geom)::json As geometry"+
+				", row_to_json((SELECT l FROM (SELECT uuid,osmfile,type,tags) As l"+
+					")) As properties "+
+			 "FROM data.submissions As lg ) As f )  As fc;";
+		console.log(queryStr)
+		pghelper.query(queryStr, function(err, data){
+			console.log('returned data: ' + data)
+			res.send(data[0]["row_to_json"]);
+		})
+	}
+})
+
+
+
+app.post('/query/update-mapper', function(req,res){
+	if (req.user){
+		var queryStr = "UPDATE data.gpx SET mapper='" + req.body.mapper +  "' WHERE file='" + req.body.file + "';";
+
+		pghelper.query(queryStr, function(err, data){
+			res.send(data);
+		})
 	}
 })
 
