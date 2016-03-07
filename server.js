@@ -338,6 +338,16 @@ app.get('/query/submissions-all', function(req,res) {
 	}
 })
 
+app.post('/query/update-submissions', function(req,res){
+	if (req.user){
+		var queryStr = "UPDATE data.gpx SET mapper='" + req.body.mapper +  "' WHERE file='" + req.body.file + "';";
+
+		etl.runSurvey(function(err,data){
+		  res.send(data);
+		});
+	}
+})
+
 
 
 app.post('/query/update-mapper', function(req,res){
@@ -351,7 +361,7 @@ app.post('/query/update-mapper', function(req,res){
 })
 
 app.post('/query/remove-file', function (req,res){
-	if (req.user){
+	if (req.user && req.user.permissions == "super"){
 		gpx.removeFile(req.body.file, function(err, data){
 			res.end();
 		})
@@ -372,7 +382,7 @@ var S3Helper = require("./routes/s3Helper.js");
 var s3helper = new S3Helper();
 
 app.get('/gpx',function(req,res) {
-	if (req.user) {
+	if (req.user && req.user.permissions == "super") {
 		s3helper.listGpx(function(err, data){
 	    res.render('gpx', {
 				user:req.user,
@@ -386,21 +396,22 @@ app.get('/gpx',function(req,res) {
 	}
 })
 
-app.get('/mapping',function(req,res) {
-	if (req.user) {
-    res.render('mapping', {
-			user:req.user,
-      opts:localConfig.page,
-			error:req.flash("loginMessage")
-    });
+app.get('/surveys',function(req,res) {
+	if (req.user && req.user.permissions == "super") {
+	    res.render('surveys', {
+				user:req.user,
+	      opts:localConfig.page,
+				formList:localConfig.omk.formList,
+				error:req.flash("loginMessage")
+	    });
 	} else {
 		res.redirect("/");
 	}
 })
 
-app.get('/map',function(req,res) {
+app.get('/mapping',function(req,res) {
 	if (req.user) {
-    res.render('map', {
+    res.render('mapping', {
 			user:req.user,
       opts:localConfig.page,
 			error:req.flash("loginMessage")

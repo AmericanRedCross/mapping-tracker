@@ -36,55 +36,24 @@
 						<li>
                 <a href="/mapping" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-search"></i> &nbsp; Mapping tracker</a>
             </li>
+						{{#eq user.permissions "super"}}
             <li>
                 <a href="/gpx" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-location-arrow"></i> &nbsp; GPX manager</a>
             </li>
-						<!-- <li>
-                <a href="#">Dropdown nav menu <i class="fa nav-arrow nav-float-right"></i></a>
-                <ul class="second-level">
-                    <li>
-                        <a href="#">One</a>
-                    </li>
-                    <li>
-                        <a href="#">Two</a>
-                    </li>
-                </ul>
+						<li>
+                <a href="/surveys" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-map-marker"></i> &nbsp; Survey manager</a>
             </li>
 						<li>
-                <a href="#">Dropdown nav menu 2<i class="fa nav-arrow nav-float-right"></i></a>
-                <ul class="second-level">
-                    <li>
-                        <a href="#">Three</a>
-                    </li>
-                    <li>
-                        <a href="#">Four</a>
-                    </li>
-                </ul>
-            </li> -->
-
-            <!-- <li>
-                <a href="#about" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-briefcase"></i> &nbsp; Another page</a>
-            </li>
-            <li>
-                <a href="#services" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-globe"></i> &nbsp; This too</a>
-            </li>
-            <li>
-                <a href="#portfolio" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-money"></i> &nbsp; Other</a>
-            </li>
-            <li>
-                <a href="#contact" onclick = $("#menu-close").click(); ><i class="fa fa-fw fa-list"></i> &nbsp; Lorem ipsum</a>
-            </li>
+								<a href="/users"><i class="fa fa-user"></i> &nbsp; Manage users</a>
+						</li>
+						{{/eq}}
 						<li style="border-top:1px solid #6d6e70;">
 							<form id="form-logout" style="display:none;" class="navbar-form" role="form" action="/user/logout" method="POST"></form>
-							<a href="#top"  onclick = document.getElementById('form-logout').submit(); >{{user.username}}
+							<a href="#"  onclick = document.getElementById('form-logout').submit(); >{{user.username}}
 								<span class="logout nav-float-right">Logout &nbsp;<i class="fa fa-sign-out"></i></span>
 							</a>
-						</li> -->
-						{{#eq user.permissions "super"}}
-							<li>
-								<a href="/users"><i class="fa fa-user"></i> &nbsp; Manage users</a>
-							</li>
-						{{/eq}}
+						</li>
+
 
         </ul>
     </nav>
