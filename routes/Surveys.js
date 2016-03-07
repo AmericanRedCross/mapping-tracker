@@ -61,6 +61,31 @@ Surveys.prototype.fetchData = function(survey, cb) {
 }
 
 
+Surveys.prototype.insertRows = function(key, cb) {
+
+  var self = this;
+
+  var targetCount = 0;
+  var counter = 0;
+  targetCount = self.surveys[key].length;
+  for (var i=0;i<self.surveys[key].length;i++) {
+     (function(ind) {
+         setTimeout(function(){
+
+           self.insertRow(self.surveys[key][ind], function(err,data){
+             counter ++;
+             console.log( key + " . . . " + counter + " ? ? ? " +  self.surveys[key].length)
+             if(counter === targetCount){ cb(null, key); }
+           });
+
+         }, 100 + (10 * ind));
+     })(i);
+  }
+
+}
+
+
+
 // Surveys.prototype.getGeoPath = function(form, cb) {
 //
 //   var self = this;
@@ -87,37 +112,6 @@ Surveys.prototype.fetchData = function(survey, cb) {
 // }
 
 
-Surveys.prototype.processSurveys = function(cb) {
-
-  var self = this;
-  //console.log("this . . . " + JSON.stringify(this));
-  var counter = 0;
-  var insert = flow.define(
-    function(){
-      for(var key in self.surveys){
-        console.log("processery : " + key)
-        // if(this.surveys[0] === self.surveys[0]){
-        //   console.log("TRUE!")
-        // }
-       // self.insertRows(key, self.surveys[key], this.MULTI());
-       var submissions = self.surveys[key]
-       for(var index in submissions){
-         counter ++
-         self.insertRow(submissions[index], this.MULTI())
-       }
-
-      }
-    },
-    function(){
-      console.log("ran insertRow: " + counter + " times!" )
-      cb();
-    }
-  )
-  insert();
-
-}
-
-
 var flattenObject = function(ob) {
 	var toReturn = {};
 
@@ -139,7 +133,7 @@ var flattenObject = function(ob) {
 };
 
 
-http.globalAgent.maxSockets = 1000;
+
 
 Surveys.prototype.getOsmFile = function(row, cb) {
   //console.log("getOsmFile... ")
@@ -154,45 +148,14 @@ Surveys.prototype.getOsmFile = function(row, cb) {
     path: "/public/submissions/" + formId + "/" + uuid + "/" + osmFilename
   };
 
-  http.get(url).on('response', function (response) {
-    var body = '';
-    response.on('data', function (chunk) {
-      body += chunk;
-    });
-    response.on('end', function () {
-      var xmlOsm = new dom().parseFromString(body);
-      var geojsonOsm = osmtogeojson(xmlOsm);
-      //console.log("got osm file from url: " + url)
-      if(geojsonOsm === null){ geojsonOsm = turf.featurecollection([turf.point([0,0])]) }
-      var geojsonOsm = turf.featurecollection([turf.point([0,0])]);
-      cb(null, geojsonOsm);
-    });
-  }).on('error', function(e) {
-      // console.log("Got error: " + e);
+  request(url, function(error,response,body){
+    if (!error && response.statusCode == 200) {
+      cb(null, body);
+    } else {
       console.log("ERROR trying to get: " + url)
-          var geojsonOsm = turf.featurecollection([turf.point([0,0])]);
-          cb(null, geojsonOsm);
-  });
-
-
-  // request(url, function(error,response,body){
-  //   if (!error && response.statusCode == 200) {
-      // var xmlOsm = new dom().parseFromString(body);
-      // var geojsonOsm = osmtogeojson(xmlOsm);
-      // if(geojsonOsm === null){ geojsonOsm = turf.featurecollection([turf.point([0,0])]) }
-  //     //console.log("got osm file . . . " + JSON.stringify(geojsonOsm))
-  //     console.log("got osm file from url: " + url)
-  //     //console.log("success w getSubmissions for: " + survey) // Show the HTML for the Google homepage.
-  //     cb(null, geojsonOsm);
-  //   } else {
-  //     //console.log("ERROR: getOsmFile didnt work for: " + JSON.stringify(row));
-  //     console.log(error)
-  //     console.log("with the url: " + url);
-  //     var geojsonOsm = turf.featurecollection([turf.point([0,0])]);
-  //     cb(null, geojsonOsm);
-  //   }
-  // })
-
+      cb(null, null);
+    }
+  })
 
 }
 
@@ -200,6 +163,7 @@ Surveys.prototype.insertRow = function(dataObj, cb) {
 
     var self = this;
     // console.log("my dataObj = " + dataObj)
+    // console.log(" stringify = " + JSON.stringify(dataObj))
 
     var insert = flow.define(
       function(){
@@ -207,7 +171,13 @@ Surveys.prototype.insertRow = function(dataObj, cb) {
         self.getOsmFile(dataObj, this);
 
       },
-      function(err, geojsonOsm){
+      function(err, body){
+        if(body === null){
+          var geojsonOsm = turf.featurecollection([turf.point([0,0])]);
+        } else {
+          var xmlOsm = new dom().parseFromString(body);
+          var geojsonOsm = osmtogeojson(xmlOsm);
+        }
 
         var omkType = '';
         var tags = '';

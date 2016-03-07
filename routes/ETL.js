@@ -63,7 +63,10 @@ ETL.prototype.runSurvey = flow.define(
     },
     function(){
 
-      surveys.processSurveys(this);
+      for(var key in surveys.surveys){
+        console.log("processery : " + key);
+        surveys.insertRows(key, this.MULTI());
+      }
 
     },
     function(){
