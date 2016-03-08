@@ -251,7 +251,7 @@ app.get('/api/user/:email',[jwtauth.auth],function(req,res) {
 })
 
 
-var PostGresHelper = require("./routes/postGresHelper.js");
+var PostGresHelper = require("./routes/PostGresHelper.js");
 var pghelper = new PostGresHelper();
 
 var Gpx = require("./routes/Gpx.js");
