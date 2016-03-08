@@ -415,7 +415,7 @@ app.get('/',function (req,res) {
 	});
 })
 
-var S3Helper = require("./routes/s3Helper.js");
+var S3Helper = require("./routes/S3Helper.js");
 var s3helper = new S3Helper();
 
 app.get('/gpx',function(req,res) {
