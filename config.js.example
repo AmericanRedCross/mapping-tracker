@@ -9,7 +9,8 @@ settings.page = {
 }
 
 settings.application = {
-	db: "users",
+	// if running mulitple node apps with mongodb user database make sure each has a diff db/collection name
+	db: "mapping-tracker-users",
 	port: 3000
 }
 
@@ -19,10 +20,15 @@ settings.s3 = {
   //Amazon S3 Credentials are stored in ~/.aws/credentials (see: http://aws.amazon.com/sdk-for-node-js/)
 }
 
+settings.omk = {
+	server: '',
+	formList: ["", ""]
+}
+
 settings.pg = {
 	server: 'localhost',
 	port: '5432',
-	database: 'mapping',
+	database: '',
 	user: '',
 	password: ''
 }

@@ -294,6 +294,31 @@ app.get('/query/distinct-file',function(req,res) {
 	}
 })
 
+app.post('/query/hex', function (req,res){
+	if (req.user){
+		var queryCount = "SELECT data.hex.id, data.hex.geom, count(*) AS total " +
+			"FROM data.submissions, data.hex " +
+			"WHERE st_intersects(data.hex.geom, data.submissions.geom) " +
+			"GROUP BY data.hex.id, data.hex.geom"
+
+	var queryStr = "SELECT row_to_json(fc) "+
+   "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+   "FROM (SELECT 'Feature' As type "+
+      ", ST_AsGeoJSON(lg.geom)::json As geometry"+
+      ", row_to_json((SELECT l FROM (SELECT id, total) As l"+
+        ")) As properties "+
+     "FROM (" + queryCount + ") As lg ) As f )  As fc;";
+
+		pghelper.query(queryStr, function(err, data){
+ 			res.send(data[0]["row_to_json"]);
+ 		})
+	}
+})
+
+
+// !!! SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT osmfile='undefined' GROUP BY today;
+
+
 // SELECT min(first) AS dmin, max(last) AS dmax FROM data.gpx;
 // SELECT DISTINCT mapper FROM data.gpx;
 
@@ -329,7 +354,7 @@ app.get('/query/submissions-all', function(req,res) {
 				", ST_AsGeoJSON(lg.geom)::json As geometry"+
 				", row_to_json((SELECT l FROM (SELECT uuid,osmfile,type,tags) As l"+
 					")) As properties "+
-			 "FROM data.submissions As lg ) As f )  As fc;";
+			 "FROM data.submissions As lg WHERE NOT type='ERROR' ) As f )  As fc;";
 		console.log(queryStr)
 		pghelper.query(queryStr, function(err, data){
 			console.log('returned data: ' + data)
@@ -337,6 +362,18 @@ app.get('/query/submissions-all', function(req,res) {
 		})
 	}
 })
+
+app.get('/query/submissions-date-count', function(req,res) {
+	if (req.user) {
+		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT osmfile='undefined' GROUP BY today;";
+		console.log(queryStr)
+		pghelper.query(queryStr, function(err, data){
+			console.log('returned data: ' + data)
+			res.send(data);
+		})
+	}
+})
+
 
 app.post('/query/update-submissions', function(req,res){
 	if (req.user){
