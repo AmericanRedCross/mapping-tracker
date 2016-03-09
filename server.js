@@ -271,8 +271,10 @@ var storage =   multer.diskStorage({
 var upload = multer({ storage : storage }).array('gpxFiles');
 
 app.post('/uploadgpx',function(req,res){
+		console.log("post to uploadgpx");
     upload(req,res,function(err) {
         if(err) {
+					console.log(err)
             return res.end("Error uploading file.");
         }
 				// console.log(req.body);
