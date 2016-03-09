@@ -18,7 +18,7 @@ var ETL = function() {
 }
 
 ETL.prototype.runGpx = function(uploads, cb){
-
+  console.log("etl.runGPX start")
   var self = this;
 
   self.files = uploads;

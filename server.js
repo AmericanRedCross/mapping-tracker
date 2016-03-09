@@ -276,7 +276,7 @@ app.post('/uploadgpx',function(req,res){
             return res.end("Error uploading file.");
         }
 				// console.log(req.body);
-				// console.log(req.files);
+				console.log("req.files : " + req.files);
 				etl.runGpx(req.files, function(err,data){
 					res.end('Ran ETL.');
 				});
