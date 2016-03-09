@@ -1,0 +1,1 @@
+gpx files get written to this folder on upload before processing and backup to an S3 folder
