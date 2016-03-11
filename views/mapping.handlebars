@@ -7,12 +7,25 @@
 svg {
   position: relative;
 }
+.info hr {
+  margin: 2px 0;
+}
+#info-subm, .info .info-selected {
+  display: none;
+}
+.info-note {
+  font-size: 85%;
+  color: #777;
+  font-style: italic;
+  margin-top: 3px;
+}
+
 
 .leaflet-control-attribution a {
   color: #6d6e70 !important;
   cursor: pointer;
 }
-.clickable-icon{
+.clickable{
   cursor: pointer;
 }
 .leaflet-control-attribution {
@@ -24,28 +37,89 @@ svg {
   cursor: pointer;
   color: #6d6e70;
 }
+
+.day.hover {
+  stroke: #6d6E70;
+  stroke-width: 2;
+}
+.day.focus {
+  stroke: #ffff33;
+  stroke-width: 2;
+}
+
+.hexbin {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.subm {
+  r: 3;
+  fill: #081d58;
+  fill-opacity: 0.8;
+  cursor: pointer;
+}
+.subm.focus {
+  r: 5;
+  fill: #ecb731;
+  stroke: #000;
+  stroke-width: 1;
+}
 </style>
 
+<div class="container">
 <header class="row header">
 	<div class="col-md-12">
 		<h1>Mapping dashboard</h1>
 	</div>
 </header>
-
 <hr>
+</div>
 
-<div class="row">
-	<div class="col-xs-12">
+
+
+<div class="container-fluid">
+	<div class="col-xs-9">
 		<div id="map"></div>
 	</div>
+  <div class="col-xs-3 info" style="padding:0;">
+		<div id="info-1">
+      <div class="info-head"></div>
+      <div>Total submissions: <b><span id="total-submissions"></span></b></div>
+    </div>
+    <hr>
+    <div id="info-hex">
+      <div class="info-head info-note">select a hex</div>
+      <span class="info-selected">
+        <div>Submissions in hex: <b><span id="hex-submissions"></span></b></div>
+        <div class="info-note clickable" onclick="clearInfo('hex');"><i class="fa fa-times"></i> clear selected hex</div>
+      </span>
+    </div>
+    <hr>
+    <div id="info-subm">
+      <div class="info-head info-note">select a submission</div>
+      <span class="info-selected">
+        <div>type: <span id="subm-type"></span></div>
+        <div id="subm-tags"></div>
+        <div class="info-note clickable" onclick="clearInfo('submission');"><i class="fa fa-times"></i> clear selected submission</div>
+      </span>
+    </div>
+	</div>
 </div>
+
+<div class="container">
 
 <hr>
 
 <div id="calendar" style="width: 160px;"> </div>
 
+<hr>
+
+</div>
+
+<div style="height:200px;"></div>
+
 
 <script src="js/colorbrewer.min.js"></script>
+<script src="//api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
 <script>
 
@@ -56,53 +130,42 @@ var mapFeatures = L.layerGroup().addTo(map);
 var pointLayer = L.geoJson();
 var mapBounds;
 
+var formatCommas = d3.format(",");
+
 
 L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-function getGpxGeoJson(){
-  $.ajax({
-    type: 'GET',
-    url: '/query/submissions-all',
-    dataType: 'JSON'
-  }).done(function(response){
-  	mapData(response);
-  });
-}
-
-function onEachFeature(feature, layer){
-  var popupContent = "<b>type --- </b> " + feature.properties.type + "<br>";
-  if(feature.properties.tags !== "undefined"){
-    var tags = JSON.parse(feature.properties.tags);
-    for(key in tags){
-      popupContent += key + " = " + tags[key] + "<br>";
-    }
+// ADD CONTROL FOR ZOOM TO EXTENT
+var extentControl = L.Control.extend({
+  options: {
+    position: 'topleft',
+		title: 'Full extent',
+    content: '<i class="fa fa-expand"></i>'
+  },
+  onAdd: function (map) {
+    var className = 'leaflet-control-zoom-extent', content, container;
+    container = map.zoomControl._container;
+    content = this.options.content;
+    this._createButton(this.options.title, className, content, container, this);
+    return container;
+  },
+  _createButton: function (title, className, content, container, context) {
+    this.link = L.DomUtil.create('a', className, container);
+    this.link.href = '#';
+    this.link.title = title;
+    this.link.innerHTML = content;
+    return this.link;
   }
-  layer.bindPopup(popupContent);
-}
+});
+map.addControl(new extentControl());
 
-var geojsonMarkerOptions = {
-    radius: 3,
-    fillColor: "#ff7800",
-    color: "#000",
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8
-};
-
-function mapData(data){
-  pointLayer = L.geoJson(data, {
-    pointToLayer: function(feature,latlng){
-				return L.circleMarker(latlng, geojsonMarkerOptions);
-		},
-    onEachFeature: onEachFeature
-  }).addTo(mapFeatures)
-  mapBounds = pointLayer.getBounds()
+$('.leaflet-control-zoom-extent').click(function(){
   map.fitBounds(mapBounds);
-}
+})
 
-getGpxGeoJson();
+
 
 var calendarData = [];
 
@@ -116,7 +179,6 @@ function getCalendarData(){
     drawCalendar()
   });
 }
-
 
 function drawCalendar(){
 
@@ -161,14 +223,14 @@ function drawCalendar(){
        .attr("height", cellSize)
        .attr("rx", 3)
        .attr("ry", 3)
-       .attr("fill", '#d0d0d0')
+       .attr("fill", '#eaeaea')
        .attr("x", function(d) { return (day(d) * cellSize) + (day(d) * cellMargin) + cellMargin; })
        .attr("y", function(d) { return ((week(d) - week(new Date(d.getFullYear(),d.getMonth(),1))) * cellSize) + ((week(d) - week(new Date(d.getFullYear(),d.getMonth(),1))) * cellMargin) + cellMargin ; })
        .on("mouseover", function(d) {
-         d3.select(this).style("stroke", "#6d6E70").style("stroke-width", 2)
+         d3.select(this).classed('hover', true);
        })
        .on("mouseout", function(d) {
-         d3.select(this).style("stroke", 'none').style("stroke-width", 0)
+         d3.select(this).classed('hover', false);
        })
       .datum(format);
 
@@ -182,13 +244,20 @@ function drawCalendar(){
 
 
     var color = d3.scale.quantize()
-      .domain([d3.min(calendarData, function(d) { return parseInt(d.count) }), d3.max(calendarData, function(d) { return parseInt(d.count) })])
-      .range(["#fc9272","#fb6a4a","#ef3b2c","#cb181d","#a50f15","#67000d"]);
+      .domain(d3.extent(calendarData, function(d) { return parseInt(d.count) }))
+      .range(["#9ecae1","#6baed6","#4292c6","#2171b5","#08519c","#08306b"]);
       // Every ColorBrewer Scale
       // http://bl.ocks.org/mbostock/raw/5577023/
 
   rect.filter(function(d) { return d in data; })
       .style("fill", function(d) { return color(data[d]) })
+      .classed("clickable", true)
+      .on("click", function(d){
+        if(d3.select(this).classed('focus')){
+          d3.select(this).classed('focus', false)
+        } else { d3.select(this).classed('focus', true)  }
+        filterMap();
+      })
     .select("title")
       .text(function(d) { return titleFormat(new Date(d)) + ": " + data[d]; });
 
@@ -196,64 +265,221 @@ function drawCalendar(){
 
 getCalendarData();
 
-function getHexData(){
+
+function filterMap(){
+  var dates = [];
+  d3.selectAll("rect.day.focus").each(function(d){
+    dates.push(d)
+  })
+
   $.ajax({
     type: 'POST',
-    // data: {'file': filename},
+    data: {'dateFilter': dates},
     url: '/query/hex',
     dataType: 'JSON'
   }).done(function(response){
-    console.log("got hex data")
+    clearInfo('hex')
+    mapHex(response)
+  });
+
+}
+
+
+function getFullHexData(){
+  $.ajax({
+    type: 'POST',
+    data: {'dateFilter': undefined},
+    url: '/query/hex',
+    dataType: 'JSON'
+  }).done(function(response){
+
+    var bbox = turf.extent(response);
+    mapBounds = [[bbox[1],bbox[0]],[bbox[3],bbox[2]]]
+    map.fitBounds(mapBounds)
+
     mapHex(response)
   });
 }
 
 
-var svg = d3.select(map.getPanes().overlayPane).append("svg"),
-    hexGroup = svg.append("g").attr("class", "leaflet-zoom-hide");
+// initialize the SVG layer for D3 drawn survey points
+map._initPathRoot()
 
-function mapHex(fc){
+// pick up the SVG from the map object
+var svg = d3.select("#map").select("svg");
+var hexGroup = svg.append("g");
+  //.attr("class", "leaflet-zoom-hide hex-group");
+var submissionGroup = svg.append("g")
+  //.attr("class", "leaflet-zoom-hide submission-group");
 
-  var color = d3.scale.quantize()
-    .domain([d3.min(fc.features, function(d) { return d.properties.total }), d3.max(fc.features, function(d) { return d.properties.total })])
-    .range(["#c994c7","#df65b0","#e7298a","#ce1256","#980043","#67001f"]);
+function projectPoint(x, y) {
+  var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+  this.stream.point(point.x, point.y);
+}
 
-  function projectPoint(x, y) {
-    var point = map.latLngToLayerPoint(new L.LatLng(y, x));
-    this.stream.point(point.x, point.y);
+var transform = d3.geo.transform({point: projectPoint}),
+    path = d3.geo.path().projection(transform);
+
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
+function clickedHex(data, target){
+  if(!d3.select(target).classed("focus")){
+    hexGroup.selectAll("path.focus").classed("focus", false)
+      .transition().duration(450).style("fill-opacity", 0.45).style("stroke-width",0);
+    //hexGroup.selectAll("path").classed("focus", false);
+
+    d3.select(target).moveToFront().classed("focus", true).transition().duration(450)
+    .style("fill-opacity", 1e-6).style("stroke-width",2);
+    submissionGroup.selectAll('circle').remove()
+
+    var dates = [];
+    d3.selectAll("rect.day.focus").each(function(d){
+      dates.push(d)
+    })
+    if(dates.length === 0 ){ dates = undefined }
+
+    $.ajax({
+      type: 'POST',
+      data: {'hex': data, 'dateFilter': dates},
+      url: '/query/hex/contents',
+      dataType: 'JSON'
+    }).done(function(response){
+      mapSubmissions(response)
+      $("#info-hex .info-head").hide();
+      $("#info-subm").show();
+      $("#info-hex .info-selected").show();
+      //$("#info-subm").show();
+      $("#info-subm .info-head").show();
+      $("#info-subm .info-selected").hide();
+
+      $("#hex-submissions").html(formatCommas(data.properties.total));
+    });
   }
+}
 
-  var transform = d3.geo.transform({point: projectPoint}),
-      path = d3.geo.path().projection(transform);
-
-  var feature = hexGroup.selectAll("path")
-    .data(fc.features)
-    .enter().append("path");
-
-  map.on("viewreset", reset);
-  reset();
-
-  function reset() {
-      var bounds = path.bounds(fc),
-          topLeft = bounds[0],
-          bottomRight = bounds[1];
-
-      svg .attr("width", bottomRight[0] - topLeft[0])
-          .attr("height", bottomRight[1] - topLeft[1])
-          .style("left", topLeft[0] + "px")
-          .style("top", topLeft[1] + "px");
-
-      hexGroup   .attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
-
-      feature.attr("d", path)
-        .style("fill", function(d){
-          return color(d.properties.total)
-        })
-        .style("fill-opacity", 0.45)
+function clickedSubmission(data, target){
+  if(d3.select(target).classed("focus")){
+    submissionGroup.selectAll("circle").classed("focus", false);
+  } else {
+    submissionGroup.selectAll("circle").classed("focus", false);
+    d3.select(target).moveToFront().classed("focus", true);
+    $("#info-subm .info-head").hide();
+    $("#info-subm .info-selected").show();
+    $("#subm-type").html(data.properties.type);
+    if(data.properties.tags !== "undefined"){
+      var tagHtml = '';
+      var tags = JSON.parse(data.properties.tags);
+      for(key in tags){
+        tagHtml += key + " = " + tags[key] + "<br>";
+      }
+      $("#subm-tags").html(tagHtml);
     }
+  }
+}
+
+function clearInfo(what){
+
+  if(what === "hex"){
+    console.log('clear for : ' + what)
+    $("#info-hex .info-head").show();
+    $("#info-hex .info-selected").hide();
+    $("#info-subm").hide();
+    $("#info-subm .info-head").show();
+    hexGroup.selectAll("path.focus").classed("focus", false).style("stroke-width", 1e-6)
+      .transition().duration(450).style("stroke-width", 0).style("fill-opacity", 0.45).style("stroke-width", 1e-6);
+    submissionGroup.selectAll('circle').remove()
+
+  }
+  if(what === "submission"){
+    $("#info-subm .info-head").show();
+    $("#info-subm .info-selected").hide();
+    submissionGroup.selectAll("circle").classed("focus", false);
+  }
 
 }
 
-getHexData()
+function mapSubmissions(fc){
+  var points = submissionGroup.selectAll("circle")
+    .data(fc.features).enter().append("circle")
+    .classed('subm', true)
+    .on('click', function(d){ clickedSubmission(d, this); })
+
+    // [-72.9203588251, 11.523661775]
+    // [11.523661775, -72.9203588251]
+
+  // when map view changes adjust the locations of the svg circles
+  function updatemarker(){
+    points.attr("cx",function(d) {
+      return map.latLngToLayerPoint([d.geometry.coordinates[1],d.geometry.coordinates[0]]).x
+    });
+    points.attr("cy",function(d) {
+      return map.latLngToLayerPoint([d.geometry.coordinates[1],d.geometry.coordinates[0]]).y
+    });
+  }
+  map.on("viewreset", updatemarker);
+  updatemarker();
+
+}
+
+var x
+
+function mapHex(fc){
+
+
+  x = fc
+
+  $("#total-submissions").html(formatCommas(d3.sum(fc.features, function(d) { return d.properties.total })))
+
+  var domain = d3.extent(fc.features, function(d) { return d.properties.total })
+  if(domain[0] === domain[1]){ domain[0] = 0;}
+  var color = d3.scale.quantize()
+    .domain(domain)
+    .range(["#c994c7","#df65b0","#e7298a","#ce1256","#980043","#67001f"]);
+
+  var feature = hexGroup.selectAll("path")
+    .data(fc.features, function(d) { return d.properties.id; })
+
+  //UPDATE
+  // feature.style("fill", function(d){ return color(d.properties.total); })
+  //   .style("stroke", function(d){ return color(d.properties.total); })
+
+  //ENTER
+  feature.enter().append("path")
+    .classed("hexbin", true)
+    .style("stroke-width", 0)
+    .style("fill-opacity", 1e-6)
+    .style("fill", "#fff")
+
+  //ENTER + UPDATE
+  feature.on('click', function(d){ clickedHex(d, this); })
+    .transition()
+    .duration(850)
+    .style("fill-opacity", 0.45)
+    .style("fill", function(d){
+      return color(d.properties.total)
+    })
+    .style("stroke", function(d){
+      return color(d.properties.total)
+    })
+
+
+  //EXIT
+  feature.exit().transition()
+      .duration(750).style("fill-opacity", 1e-6).remove();
+
+  function updateHex(){
+    feature.attr("d", path);
+  }
+  map.on("viewreset", updateHex);
+  updateHex();
+
+
+}
+
+getFullHexData()
 
 </script>

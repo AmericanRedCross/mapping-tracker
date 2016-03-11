@@ -41,7 +41,7 @@ Surveys.prototype.downloadAllData = function(cb) {
 Surveys.prototype.fetchData = function(survey, cb) {
 
   var self = this;
-  var url = localConfig.omk.server + "/submissions/" + survey + ".json";
+  var url = localConfig.omk.server + "/omk/odk/submissions/" + survey + ".json";
   console.log("url: " + url)
   request(url, function(error,response,body){
     if (!error && response.statusCode == 200) {
@@ -142,7 +142,7 @@ Surveys.prototype.getGeo = function(data, cb) {
   if(data.originalFilename) {
       console.log("originalFilename: " + data.originalFilename)
       // first check for an osm file name from an omk question
-      var url = localConfig.omk.server + "/public/submissions/" + data.formId + "/" + data.instanceId.slice(5) + "/" + data.originalFilename;
+      var url = localConfig.omk.server + "/omk/data/submissions/" + data.formId + "/" + data.instanceId.slice(5) + "/" + data.originalFilename;
       request(url, function(error,response,body){
         if (!error && response.statusCode == 200) {
           var xmlOsm = new dom().parseFromString(body);
@@ -166,7 +166,7 @@ Surveys.prototype.getGeo = function(data, cb) {
           cb(null, geo, category, tags);
         } else {
           console.log("ERROR trying to get: " + url)
-          var geo = turf.featurecollection([turf.point([0,0])]);
+          var geo = turf.point([0,0]);
           cb(null, geo, "ERROR");
         }
       })
@@ -206,6 +206,7 @@ Surveys.prototype.insertRow = function(dataObj, cb) {
 
         // console.log("geo : " + JSON.stringify(geo))
         // console.log("category : " + category)
+
 
         var sql = "INSERT INTO data.submissions (uuid,today,osmfile,type,tags,geom) VALUES (" +
           "'" + data.instanceId.slice(5) + "'," +

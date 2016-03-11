@@ -296,11 +296,23 @@ app.get('/query/distinct-file',function(req,res) {
 	}
 })
 
+
 app.post('/query/hex', function (req,res){
 	if (req.user){
+
+		var dateStr = '';
+		if(req.body.dateFilter !== undefined){
+			console.log(req.body.dateFilter)
+			dateStr += "AND ( data.submissions.today = DATE('";
+			dateStr += req.body.dateFilter.join("') OR data.submissions.today = DATE('");
+			dateStr += "') )";
+		}
+
 		var queryCount = "SELECT data.hex.id, data.hex.geom, count(*) AS total " +
 			"FROM data.submissions, data.hex " +
-			"WHERE st_intersects(data.hex.geom, data.submissions.geom) " +
+			"WHERE ST_Covers(data.hex.geom, data.submissions.geom) " +
+			dateStr +
+			"AND NOT data.submissions.type='ERROR' " +
 			"GROUP BY data.hex.id, data.hex.geom"
 
 	var queryStr = "SELECT row_to_json(fc) "+
@@ -316,6 +328,36 @@ app.post('/query/hex', function (req,res){
  		})
 	}
 })
+
+app.post('/query/hex/contents',function(req,res){
+	if (req.user){
+
+		var dateStr = '';
+		if(req.body.dateFilter !== undefined){
+			console.log(req.body.dateFilter)
+			dateStr += "AND ( lg.today = DATE('";
+			dateStr += req.body.dateFilter.join("') OR lg.today = DATE('");
+			dateStr += "') )";
+		}
+
+		var hexGeo =  "ST_GeomFromGeoJSON('{" +
+		 '"type":"Polygon","coordinates":' +
+		 JSON.stringify(req.body.hex.geometry.coordinates) + "," +
+		 '"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}' + "')";
+
+		var queryStr = "SELECT row_to_json(fc) "+
+		 "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+		 "FROM (SELECT 'Feature' As type "+
+				", ST_AsGeoJSON(lg.geom)::json As geometry"+
+				", row_to_json((SELECT l FROM (SELECT uuid,osmfile,type,tags) As l"+
+					")) As properties "+
+			 "FROM data.submissions As lg WHERE ST_Covers(" + hexGeo +  ", lg.geom) " + dateStr + " AND NOT type='ERROR' ) As f )  As fc;";
+
+		pghelper.query(queryStr, function(err, data){
+	 		res.send(data[0]["row_to_json"]);
+		})
+	}
+});
 
 
 // !!! SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT osmfile='undefined' GROUP BY today;
