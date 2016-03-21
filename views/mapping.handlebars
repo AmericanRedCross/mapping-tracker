@@ -370,6 +370,7 @@ function clickedSubmission(data, target){
     $("#info-subm .info-head").hide();
     $("#info-subm .info-selected").show();
     $("#subm-type").html(data.properties.type);
+    console.log(data.properties)
     if(data.properties.tags !== "undefined"){
       var tagHtml = '';
       var tags = JSON.parse(data.properties.tags);

@@ -206,14 +206,14 @@ Surveys.prototype.insertRow = function(dataObj, cb) {
 
         // console.log("geo : " + JSON.stringify(geo))
         // console.log("category : " + category)
-
+        if(tags !== undefined) { tags = tags.replace("'","''"); }
 
         var sql = "INSERT INTO data.submissions (uuid,today,osmfile,type,tags,geom) VALUES (" +
           "'" + data.instanceId.slice(5) + "'," +
           "'" + data.today + "'," +
           "'" + data.originalFilename + "'," +
           "'" + category + "'," +
-          "$$escape" + tags + "$$," +
+          "'" + tags + "'," +
           "ST_GeomFromGeoJSON('{" +
           '"type":"Point","coordinates":' +
           JSON.stringify(geo.geometry.coordinates) + "," +
