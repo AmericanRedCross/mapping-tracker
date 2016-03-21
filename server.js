@@ -409,7 +409,7 @@ app.get('/query/submissions-all', function(req,res) {
 
 app.get('/query/submissions-date-count', function(req,res) {
 	if (req.user) {
-		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT osmfile='undefined' GROUP BY today;";
+		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT ((type='omk-poly' OR type='omk-point') AND osmfile='undefined') OR type='ERROR' GROUP BY today;";		
 		console.log(queryStr)
 		pghelper.query(queryStr, function(err, data){
 			console.log('returned data: ' + data)
