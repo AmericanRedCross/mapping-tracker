@@ -213,7 +213,7 @@ Surveys.prototype.insertRow = function(dataObj, cb) {
           "'" + data.today + "'," +
           "'" + data.originalFilename + "'," +
           "'" + category + "'," +
-          "'" + tags + "'," +
+          "$$escape" + tags + "$$," +
           "ST_GeomFromGeoJSON('{" +
           '"type":"Point","coordinates":' +
           JSON.stringify(geo.geometry.coordinates) + "," +
