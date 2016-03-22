@@ -6,6 +6,7 @@ var path = require('path');
 var pg = require('pg');
 var localConfig = require('../config');
 var flow = require('flow');
+var exec = require('child_process').exec;
 
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
@@ -48,17 +49,28 @@ Gpx.prototype.convertFile = function(fileObject, cb) {
 
   var self = this;
 
-  fs.readFile(fileObject.path, function(err,data){
-    if (err) { console.log(err) }
-
-    var gpx = jsdom(data);
-    var converted = tj.gpx(gpx);
-    // self.featureCollections[fileObject.filename] = converted;
-    // cb();
-    self.segmentTracks(fileObject.filename, converted, cb);
-
-  });
-
+  if(path.extname(fileObject.filename) === ".gpx"){
+    fs.readFile(fileObject.path, function(err,data){
+      if (err) { console.log(err) }
+      var gpx = jsdom(data);
+      var converted = tj.gpx(gpx);
+      self.segmentTracks(fileObject.filename, converted, cb);
+    });
+  } else if (path.extname(fileObject.filename) === ".fit"){
+    var command = "gpsbabel -t -i garmin_fit -f " + fileObject.path + " -o gpx -F " + fileObject.path.slice(0,-4) + ".gpx";
+    exec(command, function (error, stdout, stderr) {
+        if (error !== null) {
+          console.log('exec error: ' + error);
+        } else {
+          fs.readFile(fileObject.path.slice(0,-4) + ".gpx", function(err,data){
+            if (err) { console.log(err) }
+            var gpx = jsdom(data);
+            var converted = tj.gpx(gpx);
+            self.segmentTracks(fileObject.filename, converted, cb);
+          });
+        }
+    });
+  }
 }
 
 Gpx.prototype.segmentTracks = function(key, fc, cb) {

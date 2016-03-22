@@ -9,6 +9,7 @@ A work in progress tool for monitoring the progress of submissions to forms host
 - create the a postgres database with name `mapping`
 - put a .geojson file of your analysis frid in `setup/`
 - run `setup/dataSetup.js` (Postgis extensions are setup here) then `setup/hexSetup.js`
+- install gpsbabel
 - install [PM2](https://github.com/Unitech/pm2) `sudo npm install pm2 -g`
   - other tools will let you keep the application up and running on your server (e.g. [Forever](https://github.com/foreverjs/forever))
 - `pm2 start server.js`

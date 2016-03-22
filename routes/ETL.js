@@ -37,7 +37,12 @@ ETL.prototype.runGpx = function(uploads, cb){
     function(){
       console.log('step 2')
       for(var item in uploads){
-        s3helper.backupGpx(uploads[item].path, this.MULTI());
+        if(path.extname(uploads[item].filename) === ".fit") {
+          s3helper.backupGpx(uploads[item].path, this.MULTI());
+          s3helper.backupGpx(uploads[item].path.slice(0,-4) + ".gpx", this.MULTI());
+        } else {
+          s3helper.backupGpx(uploads[item].path, this.MULTI());
+        }
       }
     },
     function(){
