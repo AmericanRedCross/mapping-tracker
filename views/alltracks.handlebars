@@ -36,7 +36,7 @@
 
 <header class="row header">
 	<div class="col-md-12">
-		<h1>GPX tracks</h1>
+		<h1>GPX tracks &nbsp; <i id="loading-indicator" class="fa fa-spinner fa-pulse"></i> </h1>
 	</div>
 </header>
 
@@ -116,6 +116,8 @@ function onEachFeature(feature, layer){
 }
 
 function mapData(data){
+
+  $("#loading-indicator").remove();
 
   lineLayer = L.geoJson(data, {
     style: function(feature){
