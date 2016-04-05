@@ -390,6 +390,22 @@ app.post('/query/gpx-single', function (req,res){
 	}
 })
 
+app.get('/query/gpx-all', function (req, res){
+	if (req.user){
+	var queryStr = "SELECT row_to_json(fc) "+
+   "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+   "FROM (SELECT 'Feature' As type "+
+      ", ST_AsGeoJSON(lg.geom)::json As geometry"+
+      ", row_to_json((SELECT l FROM (SELECT file,mapper,first,last,km,hours,speed) As l"+
+        ")) As properties "+
+     "FROM data.gpx As lg ) As f )  As fc;";
+
+		pghelper.query(queryStr, function(err, data){
+ 			res.send(data[0]["row_to_json"]);
+ 		})
+	}
+})
+
 app.get('/query/submissions-all', function(req,res) {
 	if (req.user) {
 		var queryStr = "SELECT row_to_json(fc) "+
@@ -409,7 +425,7 @@ app.get('/query/submissions-all', function(req,res) {
 
 app.get('/query/submissions-date-count', function(req,res) {
 	if (req.user) {
-		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT ((type='omk-poly' OR type='omk-point') AND osmfile='undefined') OR type='ERROR' GROUP BY today;";		
+		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT ((type='omk-poly' OR type='omk-point') AND osmfile='undefined') OR type='ERROR' GROUP BY today;";
 		console.log(queryStr)
 		pghelper.query(queryStr, function(err, data){
 			console.log('returned data: ' + data)
@@ -457,6 +473,19 @@ app.get('/',function (req,res) {
 		opts:localConfig.page,
 		error:req.flash("loginMessage")
 	});
+})
+
+
+app.get('/alltracks',function(req,res) {
+	if (req.user) {
+    res.render('alltracks', {
+			user:req.user,
+      opts:localConfig.page,
+			error:req.flash("loginMessage")
+    });
+	} else {
+		res.redirect("/");
+	}
 })
 
 var S3Helper = require("./routes/S3Helper.js");

@@ -208,7 +208,6 @@ function drawCalendar(){
      .enter().append("svg")
        .attr("width", (cellSize * 7) + (cellMargin * 8))
        .attr("height", function(d) {
-         console.log(calendarRows(d))
           var rows = calendarRows(d);
           return (cellSize * rows) + (cellMargin * (rows + 1))
         })
