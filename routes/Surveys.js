@@ -17,25 +17,23 @@ var Surveys = function() {
 }
 
 Surveys.prototype.downloadAllData = function(cb) {
-
   var self = this;
+  var targetCount = 0;
+  var counter = 0;
+  targetSurveyCount = self.surveyList.length;
+  for (var i=0;i<targetSurveyCount;i++) {
+     (function(ind) {
+         setTimeout(function(){
+           // # # # throttle process to limit the speed of calls to downl .osm files from the server
+           self.fetchData(self.surveyList[ind], function(err,data){
+             counter ++;
+             //console.log( key + " . . . " + counter + " ? ? ? " +  self.surveys[key].length)
+             if(counter === targetSurveyCount){ cb(); }
+           });
 
-  var getSubmissions = flow.define(
-    function(){
-      for(var key in self.surveyList) {
-        console.log("fetchData for : " + self.surveyList[key])
-        self.fetchData(self.surveyList[key], this.MULTI());
-      }
-    },
-    function(){
-      console.log('done downloading all data')
-      //When all are complete, fire callback
-      cb();
-    }
-  )
-  //Trigger the flow
-  getSubmissions();
-
+         }, 100 + (2000 * ind));
+     })(i);
+  }
 }
 
 Surveys.prototype.fetchData = function(survey, cb) {
@@ -49,13 +47,14 @@ Surveys.prototype.fetchData = function(survey, cb) {
       var jsonResponse = JSON.parse(body);
       self.surveys[survey] = jsonResponse;
       console.log("success w fetch for: " + survey)
-      cb(survey);
+      cb(null, survey);
     } else {
       console.log(" # # # # # # # ");
       console.log("fetch didnt work for: " + survey);
       console.log(localConfig.omk.server + "/omk/odk/submissions/" + survey + ".json")
       console.log("response code: " + response.statusCode);
-      cb(null);
+      //console.log(response)
+      cb('error', null);
       return;
     }
   });
