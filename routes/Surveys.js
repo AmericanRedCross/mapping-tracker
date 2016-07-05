@@ -39,39 +39,39 @@ Surveys.prototype.downloadAllData = function(cb) {
 }
 
 Surveys.prototype.fetchData = function(survey, cb) {
-
   var self = this;
-  var url = localConfig.omk.server + "/omk/odk/submissions/" + survey + ".json";
-  console.log("url: " + url)
-  request(url, function(error,response,body){
+  request({
+    method: 'GET',
+    uri: localConfig.omk.server + "/omk/odk/submissions/" + survey + ".json",
+    auth: { 'user': localConfig.omk.username, 'pass': localConfig.omk.password}
+  }, function (error, response, body) {
     if (!error && response.statusCode == 200) {
       var jsonResponse = JSON.parse(body);
       self.surveys[survey] = jsonResponse;
-      console.log("success w fetch for: " + survey) // Show the HTML for the Google homepage.
-
+      console.log("success w fetch for: " + survey)
       cb(survey);
     } else {
-      console.log(error);
-      console.log("fetch didnt work for: " + survey)
+      console.log(" # # # # # # # ");
+      console.log("fetch didnt work for: " + survey);
+      console.log(localConfig.omk.server + "/omk/odk/submissions/" + survey + ".json")
+      console.log("response code: " + response.statusCode);
       cb(null);
       return;
     }
-  })
+  });
 
 }
 
 
 Surveys.prototype.insertRows = function(key, cb) {
-
   var self = this;
-
   var targetCount = 0;
   var counter = 0;
   targetCount = self.surveys[key].length;
   for (var i=0;i<self.surveys[key].length;i++) {
      (function(ind) {
          setTimeout(function(){
-
+           // # # # throttle process to limit the speed of calls to downl .osm files from the server
            self.insertRow(self.surveys[key][ind], function(err,data){
              counter ++;
              //console.log( key + " . . . " + counter + " ? ? ? " +  self.surveys[key].length)
@@ -81,157 +81,144 @@ Surveys.prototype.insertRows = function(key, cb) {
          }, 100 + (10 * ind));
      })(i);
   }
-
-}
-
-
-
-// Surveys.prototype.getGeoPath = function(form, cb) {
-//
-//   var self = this;
-//   var url = localConfig.omk.server + "/public/forms/" + form + ".xml";
-//
-//   request(url, function(error,response,body){
-//     console.log("request to : " + url)
-//     var ref = false;
-//     if (!error && response.statusCode == 200) {
-//       var xmlDoc = new dom().parseFromString(body);
-//       if(xpath.select1("//*[@mediatype='osm/*']/@ref", xmlDoc)){
-//         var refAttr = xpath.select1("//*[@mediatype='osm/*']/@ref", xmlDoc).value
-//         // need to go from something like ""/demo-amenities-nepal/group1/osm_building"
-//         // to ["group1", "osm_building"]
-//         ref = refAttr.slice(1).split('/');
-//         ref.shift();
-//       }
-//       self.surveys[form].geoPath = ref;
-//       cb();
-//
-//     }
-//   });
-//
-// }
-
-
-var flattenObject = function(ob) {
-	var toReturn = {};
-
-	for (var i in ob) {
-		if (!ob.hasOwnProperty(i)) continue;
-
-		if ((typeof ob[i]) == 'object') {
-			var flatObject = flattenObject(ob[i]);
-			for (var x in flatObject) {
-				if (!flatObject.hasOwnProperty(x)) continue;
-
-				toReturn[x] = flatObject[x];
-			}
-		} else {
-			toReturn[i] = ob[i];
-		}
-	}
-	return toReturn;
-};
-
-
-
-
-
-
-Surveys.prototype.getGeo = function(data, cb) {
-
-  if(data.originalFilename) {
-      console.log("originalFilename: " + data.originalFilename)
-      // first check for an osm file name from an omk question
-      var url = localConfig.omk.server + "/omk/data/submissions/" + data.formId + "/" + data.instanceId.slice(5) + "/" + data.originalFilename;
-      request(url, function(error,response,body){
-        if (!error && response.statusCode == 200) {
-          var xmlOsm = new dom().parseFromString(body);
-          var geojsonOsm = osmtogeojson(xmlOsm);
-          var category = "";
-          // need to check that geojsonOsm has exactly 1 feature
-          // # # # # # # #
-          switch(geojsonOsm.features[0].geometry.type) {
-            case "Polygon":
-              category = "omk-poly";
-              break;
-            case "Point":
-              category = "omk-poi";
-              break;
-            default:
-              console.log("ERROR: unknown omk feature type");
-              category = "ERROR";
-          }
-          var geo = turf.centroid(geojsonOsm.features[0]);
-          var tags = JSON.stringify(geojsonOsm.features[0].properties.tags);
-          cb(null, geo, category, tags);
-        } else {
-          console.log("ERROR trying to get: " + url)
-          var geo = turf.point([0,0]);
-          cb(null, geo, "ERROR");
-        }
-      })
-  } else if (data.latitude && data.longitude) {
-      // then check for data from an odk geopoint question
-      var geo = turf.point([data.longitude, data.latitude]);
-      cb(null, geo, "odk-geopoint");
-  } else {
-      // otherwise return a [0,0] point
-      console.log("ERROR: no geo data found for " + data.instanceId.slice(5));
-      var geo = turf.point([0,0]);
-      cb(null, geo, "ERROR");
-  }
-
-  // if(geojsonOsm.features.length > 1){ console.log("ERROR: whoa, " + flattenObject(dataObj)["originalFilename"] + "has more than one feature??? (we're using the first one)")}
-  // if(geojsonOsm.features.length === 0){
-  //   console.log("ERROR: whoa, " + flattenObject(dataObj)["originalFilename"] + "had no features???")
-  //   centroidFeature = turf.point([0,0]);
-  // }
-
 }
 
 Surveys.prototype.insertRow = function(dataObj, cb) {
-
     var self = this;
-    // console.log("my dataObj = " + dataObj)
-    // console.log(" stringify = " + JSON.stringify(dataObj))
-    var data = flattenObject(dataObj);
-
     var insert = flow.define(
       function(){
-
-        self.getGeo(data, this);
-
+        self.parseDataObject(dataObj, this);
       },
-      function(err, geo, category, tags){
-
-        // console.log("geo : " + JSON.stringify(geo))
-        // console.log("category : " + category)
-        if(tags !== undefined) { tags = tags.replace("'","''"); }
-
-        var sql = "INSERT INTO data.submissions (uuid,today,osmfile,type,tags,geom) VALUES (" +
-          "'" + data.instanceId.slice(5) + "'," +
-          "'" + data.today + "'," +
-          "'" + data.originalFilename + "'," +
-          "'" + category + "'," +
-          "'" + tags + "'," +
-          "ST_GeomFromGeoJSON('{" +
-          '"type":"Point","coordinates":' +
-          JSON.stringify(geo.geometry.coordinates) + "," +
-          '"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}' + "'));";
-
-        pghelper.query(sql, this);
-
+      function(ob){
+        self.processOsm(ob, this.MULTI())
+        self.processGeoPoint(ob, this.MULTI())
       },
       function(){
-        //console.log('done inserting')
-
         cb();
       }
     );
-
     insert();
+}
+
+Surveys.prototype.parseDataObject = function(ob, cb) {
+
+  var returnOb = {'osmFiles': [], 'latLng':[]}
+  // # # # copy over attributes we need in later steps
+  for (var i in ob.meta) {
+    returnOb[i] = ob.meta[i];
+  }
+
+  function findGeo(index, value){
+    if ((typeof value) == 'object') {
+      for (var x in value) findGeo(x, value[x]);
+    } else {
+      if ((typeof value) == 'string') {
+        if(value.slice(-4).toLowerCase() === '.osm') returnOb.osmFiles.push(value);
+      }
+      if (index === "latitude") returnOb.latLng[0] = value;
+      if (index === "longitude") returnOb.latLng[1] = value;
+      if (index === "today") returnOb['today'] = value;
+    }
+  }
+  for (var i in ob) findGeo(i, ob[i]);
+  if(!returnOb.today) returnOb['today'] = "1900/01/01";
+
+  cb(returnOb);
 
 }
 
+Surveys.prototype.processOsm = function(ob, cb) {
+  var self = this;
+  for(file in ob.osmFiles){
+    flow.exec(
+
+      function(){
+        self.fetchOsm(ob.osmFiles[file], ob, this);
+      },
+      function(err, geo){
+        if(!err) {
+          self.insertGeo(geo, ob, this);
+        }
+      }, function(){
+        return;
+      }
+    );
+  }
+  cb();
+}
+
+Surveys.prototype.processGeoPoint = function(ob, cb) {
+  var self = this;
+  if(!isNaN(parseFloat(ob.latLng[0])) && !isNaN(parseFloat(ob.latLng[1]))){
+    var geo = {
+      "filename": "n/a",
+      "category": "odk-geopoint",
+      "point": turf.point([ob.latLng[1], ob.latLng[0]])
+    }
+    self.insertGeo(geo, ob, cb);
+  } else {
+    cb();
+  }
+}
+
+Surveys.prototype.fetchOsm = function(filename, ob, cb){
+  request({
+    method: 'GET',
+    uri: localConfig.omk.server + "/omk/data/submissions/" + ob.formId + "/" + ob.instanceId.slice(5) + "/" + filename,
+    auth: { 'user': localConfig.omk.username, 'pass': localConfig.omk.password}
+  }, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var xmlOsm = new dom().parseFromString(body);
+      var geojsonOsm = osmtogeojson(xmlOsm);
+      var category = "";
+      switch(geojsonOsm.features[0].geometry.type) {
+        case "Polygon":
+          category = "omk-poly";
+          break;
+        case "Point":
+          category = "omk-poi";
+          break;
+        default:
+          console.log("ERROR: unknown omk feature type");
+          category = "ERROR";
+      }
+      var geo = {
+        "filename": filename,
+        "category": category,
+        "point": turf.centroid(geojsonOsm.features[0]),
+        "tags": JSON.stringify(geojsonOsm.features[0].properties.tags)
+      }
+      cb(null, geo);
+    } else {
+      console.log("fetch didnt work for: " + filename);
+      console.log(ob)
+      cb("error");
+    }
+  });
+}
+
+Surveys.prototype.insertGeo = function(geo, ob, cb) {
+  // console.log("geo : " + JSON.stringify(geo))
+  // console.log("category : " + category)
+  if(geo.tags !== undefined) { geo.tags = geo.tags.replace("'","''"); }
+  var number;
+  if(!geo.filename){ number = 0; } else {
+    number = ob.osmFiles.indexOf(geo.filename) + 1;
+  }
+  var sql = "INSERT INTO data.submissions (id,uuid,formid,today,osmfile,type,tags,geom) VALUES (" +
+    "'" + ob.instanceId.slice(5) + "-" + number + "'," +
+    "'" + ob.instanceId.slice(5) + "'," +
+    "'" + ob.formId + "'," +
+    "'" + ob.today + "'," +
+    "'" + geo.filename + "'," +
+    "'" + geo.category + "'," +
+    "'" + geo.tags + "'," +
+    "ST_GeomFromGeoJSON('{" +
+    '"type":"Point","coordinates":' +
+    JSON.stringify(geo.point.geometry.coordinates) + "," +
+    '"crs":{"type":"name","properties":{"name":"EPSG:4326"}}}' + "'));";
+
+  pghelper.query(sql, cb);
+}
 
 module.exports = Surveys;

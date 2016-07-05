@@ -63,6 +63,15 @@ svg {
   stroke: #000;
   stroke-width: 1;
 }
+#map-loading {
+  position: absolute;
+  z-index: 99;
+  top: 10px;
+  right: 25px;
+  height: 100px;
+  background-color: rgba(255,255,255,0.6);
+  display:none;
+}
 </style>
 
 <div class="container">
@@ -78,6 +87,7 @@ svg {
 
 <div class="container-fluid">
 	<div class="col-xs-9">
+    <img id="map-loading" src="media/ajax_loader_gray_512.gif" />
 		<div id="map"></div>
 	</div>
   <div class="col-xs-3 info" style="padding:0;">
@@ -134,7 +144,8 @@ var formatCommas = d3.format(",");
 
 
 L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+// L.tileLayer('http://d.tile.stamen.com/toner-lite/{z}/{x}/{y}.png', {
+  attribution: 'Map tiles by <a href="http://stamen.com/">Stamen Design</a> | &copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 // ADD CONTROL FOR ZOOM TO EXTENT
@@ -266,6 +277,7 @@ getCalendarData();
 
 
 function filterMap(){
+  $('#map-loading').show();
   var dates = [];
   d3.selectAll("rect.day.focus").each(function(d){
     dates.push(d)
@@ -278,6 +290,7 @@ function filterMap(){
     dataType: 'JSON'
   }).done(function(response){
     clearInfo('hex')
+
     mapHex(response)
   });
 
@@ -285,6 +298,7 @@ function filterMap(){
 
 
 function getFullHexData(){
+  $('#map-loading').show();
   $.ajax({
     type: 'POST',
     data: {'dateFilter': undefined},
@@ -377,6 +391,8 @@ function clickedSubmission(data, target){
         tagHtml += key + " = " + tags[key] + "<br>";
       }
       $("#subm-tags").html(tagHtml);
+    } else {
+      $("#subm-tags").html('');
     }
   }
 }
@@ -435,6 +451,7 @@ function mapHex(fc){
   $("#total-submissions").html(formatCommas(d3.sum(fc.features, function(d) { return d.properties.total })))
 
   var domain = d3.extent(fc.features, function(d) { return d.properties.total })
+  console.log(domain)
   if(domain[0] === domain[1]){ domain[0] = 0;}
   var color = d3.scale.quantize()
     .domain(domain)
@@ -470,6 +487,8 @@ function mapHex(fc){
   //EXIT
   feature.exit().transition()
       .duration(750).style("fill-opacity", 1e-6).remove();
+
+  $('#map-loading').hide();
 
   function updateHex(){
     feature.attr("d", path);

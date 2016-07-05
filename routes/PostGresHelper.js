@@ -25,9 +25,12 @@ PostGresHelper.prototype.query = function(queryStr, cb) {
       done();
 
       if (queryerr) {
-        console.error('ERROR RUNNING QUERY:', queryStr, queryerr);
+        // console.error('ERROR RUNNING QUERY:', queryStr, queryerr);
+        if(queryerr['constraint'] !== 'submissions_pkey') {
+          console.error('ERROR RUNNING QUERY:', queryStr, queryerr);
+        }
         // console.error('ERROR RUNNING QUERY:', queryerr);
-        console.error('ERROR RUNNING QUERY');
+        // console.error('ERROR RUNNING QUERY');
       }
 
       //console.log("Ran Query: " + queryStr);

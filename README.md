@@ -6,7 +6,7 @@ A work in progress tool for monitoring the progress of submissions to forms host
 - change the permissions of the tmp folder so the app can write to it `sudo chown -R ubuntu:ubuntu /mapping-tracker/tmp/`
 - create a config.js file from config.js.example and adjust settings for your deployment
 - start mongo and postgres
-- create the a postgres database with name `mapping`
+- create a postgres database with name `mapping`
 - put a .geojson file of your analysis frid in `setup/`
 - run `setup/dataSetup.js` (Postgis extensions are setup here) then `setup/hexSetup.js`
 - install gpsbabel

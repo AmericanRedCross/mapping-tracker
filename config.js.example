@@ -21,8 +21,11 @@ settings.s3 = {
 }
 
 settings.omk = {
-	server: '',
-	formList: ["", ""]
+	server: 'http://url.com',
+	username: 'user',
+	password: 'pass',
+	formList: ["", ""],
+	dateRange: ["19000101", "20500101"] // no separator characters
 }
 
 settings.pg = {

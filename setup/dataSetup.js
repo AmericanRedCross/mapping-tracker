@@ -37,7 +37,9 @@ var setup = flow.define(
 
     var sql = "CREATE TABLE data.submissions " +
     "( " +
-      "uuid      text primary key, " +
+      "id        text primary key, " +
+      "uuid      text,"  +
+      "formid    text,"  +
       "today     date, " +
       "osmfile   text, " +
       "type      text, " +

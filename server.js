@@ -425,7 +425,8 @@ app.get('/query/submissions-all', function(req,res) {
 
 app.get('/query/submissions-date-count', function(req,res) {
 	if (req.user) {
-		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE NOT ((type='omk-poly' OR type='omk-point') AND osmfile='undefined') OR type='ERROR' GROUP BY today;";
+		var queryStr = "SELECT today, COUNT(*) as count FROM data.submissions WHERE " +
+		"NOT (today<'" + localConfig.omk.dateRange[0] + "' OR today>'" + localConfig.omk.dateRange[1] + "') OR type='ERROR' GROUP BY today;";
 		console.log(queryStr)
 		pghelper.query(queryStr, function(err, data){
 			console.log('returned data: ' + data)
@@ -437,10 +438,8 @@ app.get('/query/submissions-date-count', function(req,res) {
 
 app.post('/query/update-submissions', function(req,res){
 	if (req.user){
-		var queryStr = "UPDATE data.gpx SET mapper='" + req.body.mapper +  "' WHERE file='" + req.body.file + "';";
-
 		etl.runSurvey(function(err,data){
-		  res.send(data);
+		  res.send("done");
 		});
 	}
 })
