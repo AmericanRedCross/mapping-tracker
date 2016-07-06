@@ -296,6 +296,24 @@ app.get('/query/distinct-file',function(req,res) {
 	}
 })
 
+app.post('/query/hex/all', function (req,res){
+	if (req.user){
+
+	var queryCount = "SELECT * FROM data.hex WHERE count > 0"
+
+	var queryStr = "SELECT row_to_json(fc) "+
+   "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
+   "FROM (SELECT 'Feature' As type "+
+      ", ST_AsGeoJSON(lg.geom)::json As geometry"+
+      ", row_to_json((SELECT l FROM (SELECT id, count) As l"+
+        ")) As properties "+
+     "FROM (" + queryCount + ") As lg ) As f )  As fc;";
+
+		pghelper.query(queryStr, function(err, data){
+ 			res.send(data[0]["row_to_json"]);
+ 		})
+	}
+})
 
 app.post('/query/hex', function (req,res){
 	if (req.user){
@@ -308,7 +326,7 @@ app.post('/query/hex', function (req,res){
 			dateStr += "') )";
 		}
 
-		var queryCount = "SELECT data.hex.id, data.hex.geom, count(*) AS total " +
+		var queryCount = "SELECT data.hex.id, data.hex.geom, count(*) AS count " +
 			"FROM data.submissions, data.hex " +
 			"WHERE ST_Covers(data.hex.geom, data.submissions.geom) " +
 			dateStr +
@@ -319,7 +337,7 @@ app.post('/query/hex', function (req,res){
    "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features "+
    "FROM (SELECT 'Feature' As type "+
       ", ST_AsGeoJSON(lg.geom)::json As geometry"+
-      ", row_to_json((SELECT l FROM (SELECT id, total) As l"+
+      ", row_to_json((SELECT l FROM (SELECT id, count) As l"+
         ")) As properties "+
      "FROM (" + queryCount + ") As lg ) As f )  As fc;";
 
@@ -437,9 +455,25 @@ app.get('/query/submissions-date-count', function(req,res) {
 
 
 app.post('/query/update-submissions', function(req,res){
+
 	if (req.user){
+		// without a intermittent write to the response, the POST request will repeat
+		// the hex count update at the end of the submissions refresh takes a while
+		var working = true;
+		var timerLoop = function(){
+			setTimeout(function () {
+				if(working){
+					res.write(".");
+					timerLoop();
+				} else {
+					res.write("done!");
+					res.send();
+				}
+			}, 2000)
+		};
+		timerLoop();
 		etl.runSurvey(function(err,data){
-		  res.send("done");
+			working = false;
 		});
 	}
 })

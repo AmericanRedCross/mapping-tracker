@@ -73,7 +73,7 @@ Surveys.prototype.insertRows = function(key, cb) {
            // # # # throttle process to limit the speed of calls to downl .osm files from the server
            self.insertRow(self.surveys[key][ind], function(err,data){
              counter ++;
-             //console.log( key + " . . . " + counter + " ? ? ? " +  self.surveys[key].length)
+            //  console.log( key + " . . . " + counter + " ? ? ? " +  self.surveys[key].length)
              if(counter === targetCount){ cb(null, key); }
            });
 
@@ -121,7 +121,7 @@ Surveys.prototype.parseDataObject = function(ob, cb) {
       if ((typeof value) == 'string') {
         if(value.slice(-4).toLowerCase() === '.osm') returnOb.osmFiles.push(value);
       }
-      // # # # the precision thing below is a hacky solution to get around 
+      // # # # the precision thing below is a hacky solution to get around
       // # # # https://github.com/AmericanRedCross/OpenMapKitServer/issues/59
       if (index === "latitude") {
         if (precision(parseFloat(value)) > 0) returnOb.latLng[0] = value;

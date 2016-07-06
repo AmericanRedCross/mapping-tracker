@@ -10,7 +10,6 @@
 	</div>
 </header>
 
-  <form id="surveys-etl" style="display:none;" action="/query/update-submissions" method="POST"></form>
   <span id="etl-btn" class="btn btn-dark" >
     <span class="">Sync &nbsp;<i class="fa fa-refresh"></i></span>
   </span>
@@ -29,29 +28,24 @@
 
 </div> <!-- / container -->
 
-<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.form/3.51/jquery.form.min.js"></script>
 <script>
 
-$(document).ready(function() {
-  $( "#surveys-etl" ).submit(function(e) {
-    d3.select("#etl-btn").classed("disabled", true);
-    d3.select("#etl-btn i").classed({'fa-pulse':true});
-    $(this).ajaxSubmit({
-      error: function(xhr) {
-        status('Error: ' + xhr.status);
-      },
-      success: function(response) {
-        console.log(response)
-        d3.select("#etl-btn").classed("disabled", false);
-        d3.select("#etl-btn i").classed({'fa-pulse':false});
-      }
-    });
-    return false;
-  });
-});
-
+var running = false;
 $("#etl-btn").on('click', function() {
-    $('#surveys-etl').submit();
+	if(running) return;
+	running = true;
+	d3.select("#etl-btn").classed("disabled", true);
+	d3.select("#etl-btn i").classed({'fa-pulse':true});
+	$.ajax({
+		method: 'POST',
+		url: '/query/update-submissions',
+		success: function(response){
+			console.log(response)
+			d3.select("#etl-btn").classed("disabled", false);
+			d3.select("#etl-btn i").classed({'fa-pulse':false});
+			running = false;
+		}
+	});
 });
 
 

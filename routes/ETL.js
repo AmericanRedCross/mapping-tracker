@@ -13,6 +13,9 @@ var gpx = new Gpx();
 var Surveys = require("../routes/Surveys.js");
 var surveys = new Surveys();
 
+var PostGresHelper = require("./PostGresHelper.js");
+var pghelper = new PostGresHelper();
+
 var ETL = function() {
 
 }
@@ -57,11 +60,10 @@ ETL.prototype.runGpx = function(uploads, cb){
 }
 
 
-ETL.prototype.runSurvey = flow.define(
+ETL.prototype.runSurvey = function(cb){
 
-    function(cb) {
-
-      this.cb = cb;
+  flow.exec(
+    function() {
 
       surveys.downloadAllData(this);
 
@@ -75,11 +77,25 @@ ETL.prototype.runSurvey = flow.define(
 
     },
     function(){
+      console.log("running hex updater")
+      var sql = "UPDATE data.hex SET count = t1.total FROM " +
+      "( " +
+        "SELECT data.hex.id, count(*) AS total " +
+        "FROM data.submissions, data.hex WHERE ST_Covers(data.hex.geom, data.submissions.geom) " +
+        "AND NOT data.submissions.type='ERROR' GROUP BY data.hex.id " +
+      " ) t1 " +
+      "WHERE data.hex.id = t1.id;";
+      pghelper.query(sql, this);
+
+    },
+    function(){
 
       console.log('done the runSurvey bit');
-      this.cb();
+      cb();
     }
+    
+  );
 
-);
+}
 
 module.exports = ETL;

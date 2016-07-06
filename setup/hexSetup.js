@@ -9,10 +9,10 @@ var pghelper = new PostGresHelper();
 
 var setup = flow.define(
   function(){
-
     var sql = "CREATE TABLE data.hex" +
         "(" +
-          "id serial primary key" +
+          "id serial primary key," +
+          "count integer" +
         ");" +
         "SELECT AddGeometryColumn('data','hex','geom',4326,'POLYGON',2);";
     pghelper.query(sql, this);
@@ -26,7 +26,6 @@ var setup = flow.define(
   function(err, data){
 
     if (err) throw err;
-
     var fc = JSON.parse(data)
     for(var f in fc.features){
       var sql = "INSERT INTO data.hex (geom) VALUES (" +

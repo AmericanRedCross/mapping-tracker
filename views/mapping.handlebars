@@ -262,13 +262,13 @@ function drawCalendar(){
 
   rect.filter(function(d) { return d in data; })
       .style("fill", function(d) { return color(data[d]) })
-      .classed("clickable", true)
-      .on("click", function(d){
-        if(d3.select(this).classed('focus')){
-          d3.select(this).classed('focus', false)
-        } else { d3.select(this).classed('focus', true)  }
-        filterMap();
-      })
+      // .classed("clickable", true)
+      // .on("click", function(d){
+      //   if(d3.select(this).classed('focus')){
+      //     d3.select(this).classed('focus', false)
+      //   } else { d3.select(this).classed('focus', true)  }
+      //   filterMap();
+      // })
     .select("title")
       .text(function(d) { return titleFormat(new Date(d)) + ": " + data[d]; });
 
@@ -302,8 +302,7 @@ function getFullHexData(){
   $('#map-loading').show();
   $.ajax({
     type: 'POST',
-    data: {'dateFilter': undefined},
-    url: '/query/hex',
+    url: '/query/hex/all',
     dataType: 'JSON'
   }).done(function(response){
 
@@ -370,7 +369,7 @@ function clickedHex(data, target){
       $("#info-subm .info-head").show();
       $("#info-subm .info-selected").hide();
 
-      $("#hex-submissions").html(formatCommas(data.properties.total));
+      $("#hex-submissions").html(formatCommas(data.properties.count));
     });
   }
 }
@@ -449,9 +448,9 @@ function mapHex(fc){
 
   x = fc
 
-  $("#total-submissions").html(formatCommas(d3.sum(fc.features, function(d) { return d.properties.total })))
+  $("#total-submissions").html(formatCommas(d3.sum(fc.features, function(d) { return d.properties.count })))
 
-  var domain = d3.extent(fc.features, function(d) { return d.properties.total })
+  var domain = d3.extent(fc.features, function(d) { return d.properties.count })
   console.log(domain)
   if(domain[0] === domain[1]){ domain[0] = 0;}
   var color = d3.scale.quantize()
@@ -462,8 +461,8 @@ function mapHex(fc){
     .data(fc.features, function(d) { return d.properties.id; })
 
   //UPDATE
-  // feature.style("fill", function(d){ return color(d.properties.total); })
-  //   .style("stroke", function(d){ return color(d.properties.total); })
+  // feature.style("fill", function(d){ return color(d.properties.count); })
+  //   .style("stroke", function(d){ return color(d.properties.count); })
 
   //ENTER
   feature.enter().append("path")
@@ -478,10 +477,10 @@ function mapHex(fc){
     .duration(850)
     .style("fill-opacity", 0.8)
     .style("fill", function(d){
-      return color(d.properties.total)
+      return color(d.properties.count)
     })
     .style("stroke", function(d){
-      return color(d.properties.total)
+      return color(d.properties.count)
     })
 
 
