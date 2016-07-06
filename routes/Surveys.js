@@ -107,6 +107,13 @@ Surveys.prototype.parseDataObject = function(ob, cb) {
     returnOb[i] = ob.meta[i];
   }
 
+  function precision(a) {
+    if (!isFinite(a)) return 0;
+    var e = 1, p = 0;
+    while (Math.round(a * e) / e !== a) { e *= 10; p++; }
+    return p;
+  }
+
   function findGeo(index, value){
     if ((typeof value) == 'object') {
       for (var x in value) findGeo(x, value[x]);
@@ -114,8 +121,14 @@ Surveys.prototype.parseDataObject = function(ob, cb) {
       if ((typeof value) == 'string') {
         if(value.slice(-4).toLowerCase() === '.osm') returnOb.osmFiles.push(value);
       }
-      if (index === "latitude") returnOb.latLng[0] = value;
-      if (index === "longitude") returnOb.latLng[1] = value;
+      // # # # the precision thing below is a hacky solution to get around 
+      // # # # https://github.com/AmericanRedCross/OpenMapKitServer/issues/59
+      if (index === "latitude") {
+        if (precision(parseFloat(value)) > 0) returnOb.latLng[0] = value;
+      }
+      if (index === "longitude") {
+        if (precision(parseFloat(value)) > 0) returnOb.latLng[1] = value;
+      }
       if (index === "today") returnOb['today'] = value;
     }
   }
