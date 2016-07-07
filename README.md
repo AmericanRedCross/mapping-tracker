@@ -7,7 +7,8 @@ A work in progress tool for monitoring the progress of submissions to forms host
 - create a config.js file from config.js.example and adjust settings for your deployment
 - start mongo and postgres
 - create a postgres database with name `mapping`
-- put a .geojson file of your analysis frid in `setup/`
+- create a .geojson file of your analysis grid as `setup/hex.geojson`
+  - can use `setup/generateHex.js`
 - run `setup/dataSetup.js` (Postgis extensions are setup here) then `setup/hexSetup.js`
 - install gpsbabel
 - install [PM2](https://github.com/Unitech/pm2) `sudo npm install pm2 -g`
