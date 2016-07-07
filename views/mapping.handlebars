@@ -445,7 +445,7 @@ var x
 
 function mapHex(fc){
 
-
+//rgb(231, 41, 138)
   x = fc
 
   $("#total-submissions").html(formatCommas(d3.sum(fc.features, function(d) { return d.properties.count })))
@@ -453,9 +453,9 @@ function mapHex(fc){
   var domain = d3.extent(fc.features, function(d) { return d.properties.count })
   console.log(domain)
   if(domain[0] === domain[1]){ domain[0] = 0;}
-  var color = d3.scale.quantize()
-    .domain(domain)
-    .range(["#e7298a","#ce1256","#980043","#67001f"]);
+  var color = d3.scale.threshold()
+    .domain([2,10,25,50,100])
+    .range(["#df65b0","#e7298a","#ce1256","#980043","#67001f", "#400013"]);
 
   var feature = hexGroup.selectAll("path")
     .data(fc.features, function(d) { return d.properties.id; })
